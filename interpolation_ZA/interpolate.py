@@ -10,8 +10,10 @@ import json
 import array
 import numpy as np
 import argparse 
+#from ROOT import TFile, TTree, TH1, TCanvas
 
-from useful_functions import EvaluationGrid
+from useful_functions import *
+
 
 def get_options():
     """                                         
@@ -40,9 +42,18 @@ def main():
     # Get options from user #
     opt = get_options()
 
+    # Get histograms #
+    path_to_files = '/nfs/scratch/fynu/fbury/CMSSW_8_0_30/src/cp3_llbb/ZATools/factories_ZA/test_for_signal/slurm/output/'
+    name_dict = GetHistDict()
+    hist_dict = LoopOverHists(path_to_files,name_dict,verbose=False,return_numpy=True)
+    #TH1_dict = LoopOverHists(path_to_files,name_dict,verbose=True,return_numpy=False)
+
+    # Normalize numpy histograms #
+    hist_dict = NormalizeHist(hist_dict)
+
+
     # Get grid on which evaluate the network for the interpolation #
     grid = EvaluationGrid() 
-    print (grid)
 
 
 if __name__ == "__main__":                                     
