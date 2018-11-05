@@ -1,12 +1,14 @@
 import glob
 import os
 import re
+import sys
 import math
 import socket
 import json
 
 import array
 import numpy as np
+from operator import itemgetter
 
 from ROOT import TChain, TFile, TTree, TH1F, TH1
 from root_numpy import tree2array, rec2array, hist2array
@@ -177,13 +179,14 @@ def LoopOverHists(input_dir,hist_dict,verbose=False, return_numpy=False):
             f = TFile.Open(name)
             TH1.AddDirectory(0) # Required, "Otherwise the file owns and deletes the histogram." (cfr Root forum)
             h = f.Get(hist_name)
-            mHmA = (re.findall(r'\d+', filename)[2],re.findall(r'\d+', filename)[3]) # record mH, mA as tuple t be used as a key in the dict
+            #mHmA = (float(re.findall(r'\d+', filename)[2]),float(re.findall(r'\d+', filename)[3])) # record mH, mA as tuple t be used as a key in the dict
+            mHmA = (float(re.findall(r'\d+', filename)[2])+.01*float(re.findall(r'\d+', filename)[3]),float(re.findall(r'\d+', filename)[4])+.01*float(re.findall(r'\d+', filename)[5])) # record mH, mA as tuple t be used as a key in the dict
             TH1_dict[mHmA] = h.Clone()
+            f.Close()
             if verbose:
                 print ("\t-> [INFO] Extracted hist")
         except:
             print ("\t-> [WARNING] Could not extract hist")
-    f.Close()
             
     if not return_numpy:
         return TH1_dict
@@ -233,6 +236,14 @@ def EvaluationGrid(path_to_json='/nfs/scratch/fynu/asaggio/CMSSW_8_0_30/src/cp3_
 ###############################################################################
 # InterpolateAverage #
 ###############################################################################
+# Define euclidean distance #
+def distance(a,b):
+    """ Distance between two tuples in 2D """
+    assert len(a)==2
+    assert len(b)==2
+    return math.sqrt((float(a[0])-float(b[0]))**2+(float(a[1])-float(b[1]))**2)
+    
+
 def InterpolateAverage(neighbours,eval_grid,n_neigh):
     """
     Interpolate the rho distributions over a grid of tuples (m_H,m_A)
@@ -246,41 +257,19 @@ def InterpolateAverage(neighbours,eval_grid,n_neigh):
                 Dict    -> key = ('mH','mA') tuple
                         -> value = np.array of six bins
     """
+    grid = dict() # To be returned
+    dist_dict = dict() # keep memory of the distances 
+    for val in eval_grid: # Loop over the points to interpolate
+        hist_arr = np.zeros(6) # will be the hist array for the grid element
+        for key in neighbours: # Loop over neighbours to find the closests
+            dist_dict[key] = distance(val,key)
+        sort_dist = sorted(dist_dict.items(), key=itemgetter(1)) # sorts dist_dict : tuple ((mH,mA),distance)
 
-###############################################################################
-# GetHistDict #
-###############################################################################
-def GetHistDict():
-    """ 
-        Get Matching between hist number and filename
-        Returns 
-            - dico 
-                key = filename (.root)
-                value = hist name (TH1)
-    """
-    dico = {}
-    dico ['HToZATo2L2B_MH-1000_MA-200_13TeV-madgraph_Summer16MiniAODv2_v6.1.0+80X_ZAAnalysis_2018-02-16-3-gd29729a_histos_0.root'] = 'rho_steps_histo_MuMu_hZA_lljj_deepCSV_btagM_mll_and_met_cut_0'
-    dico ['HToZATo2L2B_MH-1000_MA-500_13TeV-madgraph_Summer16MiniAODv2_v6.1.0+80X_ZAAnalysis_2018-02-16-3-gd29729a_histos_1.root'] = 'rho_steps_histo_MuMu_hZA_lljj_deepCSV_btagM_mll_and_met_cut_0'
-    dico ['HToZATo2L2B_MH-1000_MA-50_13TeV-madgraph_Summer16MiniAODv2_v6.1.0+80X_ZAAnalysis_2018-02-16-3-gd29729a_histos_2.root'] = 'rho_steps_histo_MuMu_hZA_lljj_deepCSV_btagM_mll_and_met_cut_0'
-    dico ['HToZATo2L2B_MH-200_MA-100_13TeV-madgraph_Summer16MiniAODv2_v6.1.0+80X_ZAAnalysis_2018-02-16-3-gd29729a_histos_3.root'] = 'rho_steps_histo_MuMu_hZA_lljj_deepCSV_btagM_mll_and_met_cut_0'
-    dico ['HToZATo2L2B_MH-200_MA-50_13TeV-madgraph_Summer16MiniAODv2_v6.1.0+80X_ZAAnalysis_2018-02-16-3-gd29729a_histos_4.root'] = 'rho_steps_histo_MuMu_hZA_lljj_deepCSV_btagM_mll_and_met_cut_0'
-    dico ['HToZATo2L2B_MH-250_MA-100_13TeV-madgraph_Summer16MiniAODv2_v6.1.0+80X_ZAAnalysis_2018-02-16-3-gd29729a_histos_5.root'] = 'rho_steps_histo_MuMu_hZA_lljj_deepCSV_btagM_mll_and_met_cut_0'
-    dico ['HToZATo2L2B_MH-250_MA-50_13TeV-madgraph_Summer16MiniAODv2_v6.1.0+80X_ZAAnalysis_2018-02-16-3-gd29729a_histos_6.root'] = 'rho_steps_histo_MuMu_hZA_lljj_deepCSV_btagM_mll_and_met_cut_0'
-    dico ['HToZATo2L2B_MH-300_MA-100_13TeV-madgraph_Summer16MiniAODv2_v6.1.0+80X_ZAAnalysis_2018-02-16-3-gd29729a_histos_7.root'] = 'rho_steps_histo_MuMu_hZA_lljj_deepCSV_btagM_mll_and_met_cut_0'
-    dico ['HToZATo2L2B_MH-300_MA-200_13TeV-madgraph_Summer16MiniAODv2_v6.1.0+80X_ZAAnalysis_2018-02-16-3-gd29729a_histos_8.root'] = 'rho_steps_histo_MuMu_hZA_lljj_deepCSV_btagM_mll_and_met_cut_0'
-    dico ['HToZATo2L2B_MH-300_MA-50_13TeV-madgraph_Summer16MiniAODv2_v6.1.0+80X_ZAAnalysis_2018-02-16-3-gd29729a_histos_9.root'] = 'rho_steps_histo_MuMu_hZA_lljj_deepCSV_btagM_mll_and_met_cut_0'
-    dico ['HToZATo2L2B_MH-500_MA-100_13TeV-madgraph_Summer16MiniAODv2_v6.1.0+80X_ZAAnalysis_2018-02-16-3-gd29729a_histos_10.root'] = 'rho_steps_histo_MuMu_hZA_lljj_deepCSV_btagM_mll_and_met_cut_0'
-    dico ['HToZATo2L2B_MH-500_MA-200_13TeV-madgraph_Summer16MiniAODv2_v6.1.0+80X_ZAAnalysis_2018-02-16-3-gd29729a_histos_11.root'] = 'rho_steps_histo_MuMu_hZA_lljj_deepCSV_btagM_mll_and_met_cut_0'
-    dico ['HToZATo2L2B_MH-500_MA-300_13TeV-madgraph_Summer16MiniAODv2_v6.1.0+80X_ZAAnalysis_2018-02-16-3-gd29729a_histos_12.root'] = 'rho_steps_histo_MuMu_hZA_lljj_deepCSV_btagM_mll_and_met_cut_0'
-    dico ['HToZATo2L2B_MH-500_MA-400_13TeV-madgraph_Summer16MiniAODv2_v6.1.0+80X_ZAAnalysis_2018-02-16-3-gd29729a_histos_13.root'] = 'rho_steps_histo_MuMu_hZA_lljj_deepCSV_btagM_mll_and_met_cut_0'
-    dico ['HToZATo2L2B_MH-500_MA-50_13TeV-madgraph_Summer16MiniAODv2_v6.1.0+80X_ZAAnalysis_2018-02-16-3-gd29729a_histos_14.root'] = 'rho_steps_histo_MuMu_hZA_lljj_deepCSV_btagM_mll_and_met_cut_0'
-    dico ['HToZATo2L2B_MH-650_MA-50_13TeV-madgraph_Summer16MiniAODv2_v6.1.0+80X_ZAAnalysis_2018-02-16-3-gd29729a_histos_15.root'] = 'rho_steps_histo_MuMu_hZA_lljj_deepCSV_btagM_mll_and_met_cut_0'
-    dico ['HToZATo2L2B_MH-800_MA-100_13TeV-madgraph_Summer16MiniAODv2_v6.1.0+80X_ZAAnalysis_2018-02-16-3-gd29729a_histos_16.root'] = 'rho_steps_histo_MuMu_hZA_lljj_deepCSV_btagM_mll_and_met_cut_0'
-    dico ['HToZATo2L2B_MH-800_MA-200_13TeV-madgraph_Summer16MiniAODv2_v6.1.0+80X_ZAAnalysis_2018-02-16-3-gd29729a_histos_17.root'] = 'rho_steps_histo_MuMu_hZA_lljj_deepCSV_btagM_mll_and_met_cut_0'
-    dico ['HToZATo2L2B_MH-800_MA-400_13TeV-madgraph_Summer16MiniAODv2_v6.1.0+80X_ZAAnalysis_2018-02-16-3-gd29729a_histos_18.root'] = 'rho_steps_histo_MuMu_hZA_lljj_deepCSV_btagM_mll_and_met_cut_0'
-    dico ['HToZATo2L2B_MH-800_MA-50_13TeV-madgraph_Summer16MiniAODv2_v6.1.0+80X_ZAAnalysis_2018-02-16-3-gd29729a_histos_19.root'] = 'rho_steps_histo_MuMu_hZA_lljj_deepCSV_btagM_mll_and_met_cut_0'
-    dico ['HToZATo2L2B_MH-800_MA-700_13TeV-madgraph_Summer16MiniAODv2_v6.1.0+80X_ZAAnalysis_2018-02-16-3-gd29729a_histos_20.root'] = 'rho_steps_histo_MuMu_hZA_lljj_deepCSV_btagM_mll_and_met_cut_0'
+        for e in sort_dist[:n_neigh]: # Loop over the n_neigh closest neighbours
+            arr = neighbours[e[0]] # Gets hist array (=value of dict) corresponding to a close neighbour
+            hist_arr = np.add(hist_arr,arr)
+        hist_arr /= n_neigh # for the average
+        grid [tuple(val)] = hist_arr
     
-    return dico
-
+    return grid 
 
