@@ -7,6 +7,7 @@ import math
 import socket
 import json
 import sys
+import warnings
 
 import array
 import numpy as np
@@ -15,10 +16,6 @@ import argparse
 from sklearn import preprocessing
 from sklearn.model_selection import train_test_split 
 
-# Private modules #
-from useful_functions import *
-from get_hist_dict import *
-from NeuralNet import * 
 
 
 def get_options():
@@ -32,13 +29,32 @@ def get_options():
         help='If scan for hyperparameters to be performed [edit NeuralNet.py] and given name')
     parser.add_argument('-r','--reporting', action='store', required=False, type=str, default='',
         help='If reporting is necessary for analyzing scan given the csv file given')
+    parser.add_argument('-e','--evaluate', action='store', required=False, type=int, default=0,
+        help='Wether to evaluate the models with cross validation : provide number of folds.\nCAUTION : requires the option --scan' )
+    parser.add_argument('-d','--deploy', action='store', required=False, type=str, default='',
+        help='Wether to deploy the model, provide the name\n.CAUTION : requires the option --scan.\nWARNING : if option --evaluate, will select the best model according to cross validation,\nif not, takes the one with lowest val_loss')
 
-    return parser.parse_args()
+    opt = parser.parse_args()
+
+    # Option checks #
+    if opt.evaluate!=0 and opt.scan=='':
+        warnings.warn('--evaluate options requires --scan option')
+        sys.exit(1)
+    if opt.deploy!='' and opt.scan=='':
+        warnings.warn('--deploy options requires --scan option')
+        sys.exit(1)
+
+    return opt
 
 def main():
-    
     # Get options from user #
     opt = get_options()
+
+    # Private modules #
+    from useful_functions import LoopOverHists, NormalizeHist, EvaluationGrid, InterpolateAverage
+    from get_hist_dict import GetHistDict_previous, GetHistDict_new
+    from NeuralNet import HyperScan, HyperReport, HyperEvaluate, HyperDeploy 
+    # Needed because PyROOT messes with argparse
 
     # Input path #
     print ('[INFO] Starting histograms input')
@@ -84,17 +100,31 @@ def main():
     x_test = scaler.transform(x_test)
 
     # Make HyperScan #
-    if opt.scan!='':
+    if opt.scan != '':
+        print ('[INFO] Starting Hyperscan') 
         print ("Total training size : ",x_train.shape[0],'/',x_DNN.shape[0])
         h = HyperScan(x_train,y_train,name=opt.scan)
-    print ('... Done')
-    
-    # Reporting #
-    if opt.reporting!='': 
-        print ("Total testing size : ",x_test.shape[0],'/',x_DNN.shape[0])
-        HyperReport(opt.reporting,x_test,y_test)
-    
+        print ('... Done')
 
+    # Make HyperReport #
+    best_model = -1
+    if opt.evaluate != 0: 
+        print ('[INFO] Starting HyperReport') 
+        print ("Total validation size : ",x_test.shape[0],'/',x_DNN.shape[0])
+        best_model = HyperEvaluate(h,x_test,y_test,opt.evaluate)
+        print ('... Done')
+
+    # Make HyperDeploy #
+    if opt.evaluate != 0: 
+        print ('[INFO] Starting HyperDeploy') 
+        HyperDeploy(h,opt.deploy,best_model)
+        print ('... Done')
+
+    # Make HyperReport #
+    if opt.reporting!='': 
+        print ('[INFO] Analyzing with Report') 
+        HyperReport(opt.reporting)
+        print ('... Done')
 
 
 if __name__ == "__main__":                                     
