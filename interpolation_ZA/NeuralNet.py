@@ -9,21 +9,23 @@ import array
 import numpy as np
 
 
-import tensorflow as tf
 import keras
 from keras import utils
 from keras.layers import Input, Dense, Concatenate, BatchNormalization, LeakyReLU, Lambda, Dropout
-from keras.losses import categorical_crossentropy, mean_squared_error 
+from keras.losses import binary_crossentropy, mean_squared_error 
+from keras.optimizers import RMSprop, Adam, Nadam, SGD
 from keras.activations import relu, elu, selu, softmax, tanh
 from keras.models import Model, model_from_json, load_model
-from keras import losses, optimizers
 from keras.callbacks import EarlyStopping, CSVLogger, ReduceLROnPlateau, ModelCheckpoint, History, Callback
 from keras.regularizers import l1,l2
 import keras.backend as K
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' # removes annoying warning
 
 import talos
-from talos import Scan, Reporting, Predict, Evaluate
+from talos import Scan, Reporting, Predict, Evaluate, Deploy, Restore
 from talos.utils.best_model import *
+from talos.model.layers import *
+from talos.model.normalizers import lr_normalizer
 
 import matplotlib.pyplot as plt
 
@@ -44,64 +46,30 @@ def InterpolationModel(x_train,y_train,x_val,y_val,params):
         - model = fitted models with weights
     """     
     # Design network #
-    inputs = Input(shape=(x_train.shape[1],),name='inputs')
+    IN = Input(shape=(x_train.shape[1],),name='IN')
     L1 = Dense(params['first_neuron'],
-               activation=params['first_activation'],
-               name='L1')(inputs)
-    L2 = Dense(params['second_neuron'],
-               activation=params['second_activation'],
-               name='L2')(L1)
-    #OUT_1 = Dense(1,activation=params['output_activation'],name='OUT_1')(L2)
-    #OUT_2 = Dense(1,activation=params['output_activation'],name='OUT_2')(L2)
-    #OUT_3 = Dense(1,activation=params['output_activation'],name='OUT_3')(L2)
-    #OUT_4 = Dense(1,activation=params['output_activation'],name='OUT_4')(L2)
-    #OUT_5 = Dense(1,activation=params['output_activation'],name='OUT_5')(L2)
-    #OUT_6 = Dense(1,activation=params['output_activation'],name='OUT_6')(L2)
-    OUT = Dense(6,activation=params['output_activation'],name='OUT')(L2)
-
+               activation=params['activation'])(IN)
+    HIDDEN = hidden_layers(params,6).API(L1)
+    OUT = Dense(6,activation=params['output_activation'],name='OUT')(HIDDEN)
     # Define model #    
-    #model = Model(inputs=[inputs], outputs=[OUT_1,OUT_2,OUT_3,OUT_4,OUT_5,OUT_6])
-    model = Model(inputs=[inputs], outputs=[OUT])
+    model = Model(inputs=[IN], outputs=[OUT])
     #utils.print_summary(model=model) #used to print model
 
     # Compile #
-    adam = optimizers.Adam(lr=params['lr'], beta_1=0.9, beta_2=0.999, epsilon=1e-8, decay=0.0, amsgrad=False, clipvalue=0.5)
-    model.compile(optimizer=adam,
-                  loss={#'OUT_1':'binary_crossentropy',
-                        #'OUT_2':'binary_crossentropy',                        
-                        #'OUT_3':'binary_crossentropy',                        
-                        #'OUT_4':'binary_crossentropy',                        
-                        #'OUT_5':'binary_crossentropy',                        
-                        #'OUT_6':'binary_crossentropy',                        
-                        'OUT':'binary_crossentropy',                        
-                       },
+    #adam = optimizers.Adam(lr=params['lr'], beta_1=0.9, beta_2=0.999, epsilon=1e-8, decay=0.0, amsgrad=False, clipvalue=0.5)
+    model.compile(optimizer=params['optimizer'](lr_normalizer(params['lr'], params['optimizer'])),
+                  loss={'OUT':params['loss_function']},
                   metrics=['accuracy']) 
 
     # Fit #
-    out = model.fit({'inputs':x_train},
-                    {#'OUT_1':y_train[:,0],
-                     #'OUT_2':y_train[:,1],
-                     #'OUT_3':y_train[:,2],
-                     #'OUT_4':y_train[:,3],
-                     #'OUT_5':y_train[:,4],
-                     #'OUT_6':y_train[:,5],
-                     'OUT':y_train,
-                    },
-                    sample_weight=None,  # TODO TO BE CHANGED
+    out = model.fit({'IN':x_train},
+                    {'OUT':y_train},
+                    sample_weight=None,  
                     epochs=params['epochs'],
                     batch_size=params['batch_size'],
+                    callbacks=[],
                     verbose=0,
-                    validation_data=({'inputs':x_val},
-                                     {#'OUT_1':y_val[:,0],
-                                      #'OUT_2':y_val[:,1],
-                                      #'OUT_3':y_val[:,2],
-                                      #'OUT_4':y_val[:,3],
-                                      #'OUT_5':y_val[:,4],
-                                      #'OUT_6':y_val[:,5],
-                                      'OUT':y_val,
-                                     }#,
-                                     ########### -> TODO Must put test weight
-                                    )
+                    validation_data=({'IN':x_val},{'OUT':y_val})
                     )
                     
     return out,model
@@ -109,7 +77,7 @@ def InterpolationModel(x_train,y_train,x_val,y_val,params):
 #################################################################################################
 # HyperScan #
 #################################################################################################
-def HyperScan(x_train,y_train,name):  # MUST ADD THE WEIGHTS
+def HyperScan(x_train,y_train,name):  
     """ 
     Performs the scan for hyperparameters 
     Inputs :
@@ -124,18 +92,34 @@ def HyperScan(x_train,y_train,name):  # MUST ADD THE WEIGHTS
             object from class Scan to be used by other functions    
     Reference : /home/ucl/cp3/fbury/.local/lib/python3.6/site-packages/talos/scan/Scan.py
     """ 
-   
     # Talos hyperscan parameters #
     p = {
-            'lr' : (0.001,0.1,5),
-            'first_neuron' : [10,20],
-            'first_activation' : [relu,tanh],
-            'second_neuron' : [10,20],
-            'second_activation' : [relu,tanh],
-            'output_activation' : [relu,tanh],
-            'epochs' : [100],
-            'batch_size' : [5]
+            'lr' : (0.0001,0.1,5),
+            'first_neuron' : [5,10;15],
+            'activation' : [selu],
+            'dropout' : [0],
+            'hidden_layers' : [2],
+            'output_activation' : [selu,tanh],
+            'optimizer' : [Adam],
+            'epochs' : [100,200],
+            'batch_size' : [2,4],
+            'loss_function' : [binary_crossentropy]
         }
+    #p = {
+    #        'lr' : 0.001,
+    #        'first_neuron' : 20,
+    #        'activation' : tanh,
+    #        'dropout' : 0.5,
+    #        'hidden_layers' : 1,
+    #        'output_activation' : relu,
+    #        'epochs' : 50,
+    #        'batch_size' : 5,
+    #        'loss_function' : binary_crossentropy,
+    #        'optimizer': RMSprop
+    #    }
+    #out, model = InterpolationModel(x_train,y_train,x_train,y_train,p)
+    #sys.exit()
+
     h = Scan(  x=x_train,
                y=y_train,
                params=p,
@@ -143,8 +127,13 @@ def HyperScan(x_train,y_train,name):  # MUST ADD THE WEIGHTS
                model=InterpolationModel,
                val_split=0.2,
                reduction_metric='val_loss',
-               last_epoch_value=True,
-               print_params=True
+               #grid_downsample=0.1,
+               #random_method='lhs',
+               #reduction_method='spear',
+               #reduction_window=1000,
+               #reduction_interval=100,
+               #last_epoch_value=True,
+               #print_params=True
             )
 
     # returns the experiment configuration details
@@ -204,16 +193,17 @@ def HyperEvaluate(h,x_test,y_test,folds=5):
         scores.append(score)
 
     # Sort scores #
-    scores.sort(key=lambda x : x[0])
-    idx_best_eval = scores[0][2]
+    sorted_scores = sorted(scores,key=lambda x : x[0])
+    idx_best_eval = sorted_scores[0][2]
 
     # Print ordered scores #
-    count =0
-    for m_err,std_err, idx in scores:
-        # Avoid useless info  #
-        if count >10:
-            print ('...')
-            break
+    count = 0
+    for m_err,std_err, idx in sorted_scores:
+        count += 1
+        if count == 10:
+            print ('...') 
+        if count >= 10 and n_rounds-count>5: # avoids printing intermediate useless states
+            continue 
         # Print model and error in order #
         print ('Model index %d -> Error = %0.5f (+/- %0.5f))'%(idx,m_err,std_err))
         if idx==idx_best_model:
@@ -224,19 +214,20 @@ def HyperEvaluate(h,x_test,y_test,folds=5):
         
     # Prints best model accordind to cross-validation and val_loss #
 
-    print ('Best model from val_loss -> id ',idx_best_model)
+    print ('Best model from val_loss -> id ',idx_best_model+1)
     print ('Eval error : %0.5f (+/- %0.5f))'%(scores[idx_best_model][0],scores[idx_best_model][1]))
-    print (h.data.iloc[idx_best_model])
+    print (h.data.iloc[idx_best_model,:])
     print ('-'*80,end='\n\n')
 
-    print ('Best model from cross validation -> id ',idx_best_eval)
+    print ('Best model from cross validation -> id ',idx_best_eval+1)
     if idx_best_eval==idx_best_model:
         print ('Same model')
     else:
         print ('Eval error : %0.5f (+/- %0.5f))'%(scores[idx_best_eval][0],scores[idx_best_eval][1]))
-        print (h.data.iloc[idx_best_eval])
-        print ('-'*80,end='\n\n')
+        print (h.data.iloc[idx_best_eval,:])
+    print ('-'*80,end='\n\n')
 
+    # WARNING : model id's starts with 0 BUT on panda dataframe h.data, models start at 1
 
     return idx_best_eval
 
@@ -319,4 +310,70 @@ def HyperReport(name):
     # Plot bars #
     #r.plot_bars('lr','val_loss','batch_size','second_neuron')
 
+#################################################################################################
+# HyperRestore #
+#################################################################################################
+def HyperRestore(inputs,path):
+    """
+    Retrieve a zip containing the best model, parameters, x and y data, ... and restores it
+    Produces an output from the input numpy array
+    Inputs :
+        - inputs :  numpy array [:,2]
+            Inputs to be evaluated
+        - path : str
+            path to the model archive
+    Outputs
+        - output : numpy array [:,6]
+            output of the given model 
 
+    Reference : 
+        /home/ucl/cp3/fbury/.local/lib/python3.6/site-packages/talos/commands/restore.py 
+    """
+    # Restore model #
+    a = Restore(path)
+
+    # Output of the model #
+    output = a.model.predict(inputs)
+    
+    return output
+
+#################################################################################################
+# HyperVerif #
+#################################################################################################
+def HyperVerif(hist_dict,path,scaler):
+    """
+    Peforms the DNN interpolation for know points as a cross-check
+    Produce comparison plots 
+    Inputs :
+        - hist_dict : dict 
+            points where rho distribution is know
+                -> key = ('mH','mA') tuple
+                -> value = np.array of six bins
+        - path : str
+            name of the zip file to be used in the HyperRestore function
+        - scaler : preprocessing object
+            needed to preprocess the inputs of the network
+    Outputs :
+        - output_dict : dict
+            Result of the interpolation for each mass point 
+                -> key = ('mH','mA') tuple
+                -> value = np.array of six bins
+    """
+    # Get evaluation array input from hist #                                                     
+    eval_arr = np.empty((0,2))
+    for key in hist_dict.keys():
+        eval_arr = np.append(eval_arr,np.asarray(key).reshape(-1,2),axis=0)
+
+    eval_arr_preprocess = scaler.transform(eval_arr) # Must rescale the inputs as in training
+
+    # Performs the evaluation by the network #
+    output = HyperRestore(eval_arr_preprocess,path)
+    output_dict = {}
+    i = 0
+    for key in hist_dict.keys():
+        output_dict[key] = output[i,:]
+        print (output[i,:])
+        i += 1 # key iteration must not change
+
+
+    return output_dict
