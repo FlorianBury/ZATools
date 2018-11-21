@@ -74,21 +74,25 @@ def main():
     #path_to_files = '/nfs/scratch/fynu/fbury/CMSSW_8_0_30/src/cp3_llbb/ZATools/factories_ZA/test_full_for_signal/slurm/output/' # TODO change way to extract mH, mA in LoopOverHists
 
     # Loop to get histograms #
-    #name_dict = GetHistDict_previous()
+    print ('-'*80)
     name_dict_MuMu = GetHistDictOld('MuMu')
     name_dict_ElEl = GetHistDictOld('ElEl')
     print ('\n[INFO] MuMu Histograms\n')
     hist_dict_MuMu = LoopOverHists(path_to_files,name_dict_MuMu,verbose=False,return_numpy=True)
+    print ('-'*80)
     print ('\n[INFO] ElEl Histograms\n')
     hist_dict_ElEl = LoopOverHists(path_to_files,name_dict_ElEl,verbose=False,return_numpy=True)
     #TH1_dict = LoopOverHists(path_to_files,name_dict,verbose=True,return_numpy=False)
+    print ('-'*80)
     print ('... Done')
 
+    print ('-'*80)
     # Checks shape of distributions #
     print ('[INFO] Checking MuMu sample') 
     CheckHist(hist_dict_MuMu,verbose=False)
     print ('[INFO] Checking ElEl sample') 
     CheckHist(hist_dict_ElEl,verbose=False)
+    print ('-'*80)
 
     # Treat numpy arrays : normalization and addition #
     hist_dict = AddHist(hist_dict_MuMu,hist_dict_ElEl)

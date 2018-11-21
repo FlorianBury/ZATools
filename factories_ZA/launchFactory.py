@@ -163,7 +163,7 @@ MainPlots_ForSignal = Configuration('generatePlots.py', suffix='_for_signal', mo
             'llbb_plots': ['basic', 'inEllipse', 'outOfEllipse', 'inOut'],
             'syst': True,
             'syst_split_jec': False,
-            'llbb_stages': ['no_cut', 'mll_and_met_cut', 'inverted_met_cut', 'met_cut_and_inverted_mll_cut', 'mll_cut_and_inverted_met_cut', 'mll_and_met_cut_and_mbb_cut'],
+            'llbb_stages': ['no_cut', 'mll_and_met_cut'],
         })
 
 """
@@ -190,7 +190,7 @@ TestPlots_ForData = Configuration('generatePlots.py', suffix='_for_data', mode='
 TestPlots_ForSignal = Configuration('generatePlots.py', suffix='_for_signal', mode='plots', samples=['Signal_NonResonant', 'Signal_BM_Resonant'], generation_args={
             'sample_type': 'Signal',
             'llbb_plots': ['basic', 'nn', 'mjj_vs_nn'],
-            'syst': True,
+            'syst': False,
             'syst_split_jec': True,
         })
 """
@@ -207,8 +207,8 @@ parser.add_argument('--skip', help='Skip the building part.', action="store_true
 
 args = parser.parse_args()
 
-configurations.append(MainPlots_ForMC)
-configurations.append(MainPlots_ForData)
+#configurations.append(MainPlots_ForMC)
+#configurations.append(MainPlots_ForData)
 configurations.append(MainPlots_ForSignal)
 
 for c in configurations:
@@ -260,7 +260,6 @@ if args.test:
 
 if not args.skip:
     def create_factory(configuration, output):
-
         toolDir = "Factories"
         
         print("")
