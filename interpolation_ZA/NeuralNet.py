@@ -16,7 +16,7 @@ from keras.losses import binary_crossentropy, mean_squared_error
 from keras.optimizers import RMSprop, Adam, Nadam, SGD
 from keras.activations import relu, elu, selu, softmax, tanh
 from keras.models import Model, model_from_json, load_model
-from keras.callbacks import EarlyStopping, CSVLogger, ReduceLROnPlateau, ModelCheckpoint, History, Callback
+from keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from keras.regularizers import l1,l2
 import keras.backend as K
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' # removes annoying warning
@@ -26,6 +26,9 @@ from talos import Scan, Reporting, Predict, Evaluate, Deploy, Restore
 from talos.utils.best_model import *
 from talos.model.layers import *
 from talos.model.normalizers import lr_normalizer
+from talos.utils.gpu_utils import parallel_gpu_jobs
+
+import astetik as ast # For the plot section
 
 import matplotlib.pyplot as plt
 
@@ -48,15 +51,21 @@ def InterpolationModel(x_train,y_train,x_val,y_val,params):
     # Design network #
     IN = Input(shape=(x_train.shape[1],),name='IN')
     L1 = Dense(params['first_neuron'],
-               activation=params['activation'])(IN)
+               activation=params['activation'],
+               kernel_regularizer=l2(params['l2']))(IN)
     HIDDEN = hidden_layers(params,6).API(L1)
     OUT = Dense(6,activation=params['output_activation'],name='OUT')(HIDDEN)
+
     # Define model #    
     model = Model(inputs=[IN], outputs=[OUT])
     #utils.print_summary(model=model) #used to print model
 
+    # Callbacks #
+    early_stopping = EarlyStopping(monitor='val_loss', min_delta=0.001, patience=10, verbose=1, mode='min')
+    reduceLR = ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=5, verbose=1, mode='min', epsilon=0.0001, cooldown=0, min_lr=0.00001)
+    Callback_list = [reduceLR,early_stopping]
+
     # Compile #
-    #adam = optimizers.Adam(lr=params['lr'], beta_1=0.9, beta_2=0.999, epsilon=1e-8, decay=0.0, amsgrad=False, clipvalue=0.5)
     model.compile(optimizer=params['optimizer'](lr_normalizer(params['lr'], params['optimizer'])),
                   loss={'OUT':params['loss_function']},
                   metrics=['accuracy']) 
@@ -67,9 +76,9 @@ def InterpolationModel(x_train,y_train,x_val,y_val,params):
                     sample_weight=None,  
                     epochs=params['epochs'],
                     batch_size=params['batch_size'],
-                    callbacks=[],
                     verbose=0,
-                    validation_data=({'IN':x_val},{'OUT':y_val})
+                    validation_data=({'IN':x_val},{'OUT':y_val}),
+                    callbacks=Callback_list
                     )
                     
     return out,model
@@ -94,15 +103,16 @@ def HyperScan(x_train,y_train,name):
     """ 
     # Talos hyperscan parameters #
     p = {
-            'lr' : (0.0001,0.1,5),
-            'first_neuron' : [5,10;15],
-            'activation' : [selu],
-            'dropout' : [0],
-            'hidden_layers' : [2],
-            'output_activation' : [selu,tanh],
-            'optimizer' : [Adam],
-            'epochs' : [100,200],
-            'batch_size' : [2,4],
+            'lr' : [0.01,0.005,0.01,0.05,0.1,0.5],
+            'first_neuron' : [15,30],
+            'activation' : [relu],
+            'dropout' : (0,0.5,5),
+            'hidden_layers' : [0,1,2],
+            'output_activation' : [tanh],
+            'l2' : (0,0.5,5),
+            'optimizer' : [SGD],
+            'epochs' : [10000],
+            'batch_size' : [1],
             'loss_function' : [binary_crossentropy]
         }
     #p = {
@@ -119,11 +129,16 @@ def HyperScan(x_train,y_train,name):
     #    }
     #out, model = InterpolationModel(x_train,y_train,x_train,y_train,p)
     #sys.exit()
+    no = 1
+    while os.path.exists(os.path.join(os.getcwd(),name+'_'+str(no)+'.csv')):
+        no +=1
 
+    parallel_gpu_jobs(0.2)
     h = Scan(  x=x_train,
                y=y_train,
                params=p,
                dataset_name=name,
+               experiment_no=str(no),
                model=InterpolationModel,
                val_split=0.2,
                reduction_metric='val_loss',
@@ -133,7 +148,7 @@ def HyperScan(x_train,y_train,name):
                #reduction_window=1000,
                #reduction_interval=100,
                #last_epoch_value=True,
-               #print_params=True
+               print_params=True
             )
 
     # returns the experiment configuration details
@@ -250,12 +265,16 @@ def HyperDeploy(h,name,best):
     Reference : 
         /home/ucl/cp3/fbury/.local/lib/python3.6/site-packages/talos/commands/deploy.py 
     """
+
+    no = 1
+    while os.path.exists(os.path.join(os.getcwd(),name+'_'+str(no))):
+        no +=1
     if best == -1:
         idx = best_model(h, 'val_loss', asc=True)
     else: # From HyperEvaluate
         idx = best
 
-    Deploy(h,model_name=name,metric='val_loss',asc=True)
+    Deploy(h,model_name=name+'_'+str(no),metric='val_loss',asc=True)
 
 
 #################################################################################################
@@ -290,26 +309,38 @@ def HyperReport(name):
     print ('Best parameters :\n',r.best_params(metric='val_loss',n=1),end='\n\n')
     
     # Few plots #
-    path = os.path.join(os.getcwd(),name)
+    path = os.path.join(os.getcwd(),name+'/report')
     if not os.path.isdir(path):
-        os.makedirs(os.path.join(os.getcwd(),name))
+        os.makedirs(path)
 
     print ('[INFO] Starting plot section')
     # Correlation #
-    r.plot_corr(metric='val_loss',color_grades=20)
+    r.plot_corr(metric='val_loss')
     plt.savefig(path+'/correlation.png')
 
     # val_loss VS loss #
     r.plot_regs('loss','val_loss')
     plt.savefig(path+'/val_loss_VS_loss.png')
 
-    # val_loss KDE #
+    # KDE #
     r.plot_kde('val_loss')
     plt.savefig(path+'/KDE_val_loss.png')
 
-    # Plot bars #
-    #r.plot_bars('lr','val_loss','batch_size','second_neuron')
+    #r.plot_kde(x='val_loss',y='lr')
+    ast.kde(r.data,x='val_loss',y='lr',x_label='val_loss',y_label='learning_rate')
+    plt.savefig(path+'/KDE_val_loss_lr.png')
 
+    # Plot bars #
+    ast.bargrid(r.data,x='epochs',y='val_loss',hue='batch_size',col='optimizer',col_wrap=2)
+    plt.savefig(path+'/barplot_1.png')
+    ast.bargrid(r.data,x='epochs',y='val_loss',hue='batch_size',col='loss_function',col_wrap=1)
+    plt.savefig(path+'/barplot_2.png')
+    ast.bargrid(r.data,x='first_neuron',y='val_loss',hue='activation',col='hidden_layers')
+    plt.savefig(path+'/barplot_3.png')
+    ast.bargrid(r.data,x='first_neuron',y='val_loss',hue='output_activation',col='hidden_layers')
+    plt.savefig(path+'/barplot_4.png')
+    ast.bargrid(r.data,x='dropout',y='val_loss',hue='lr',col='hidden_layers')
+    plt.savefig(path+'/barplot_5.png')
 #################################################################################################
 # HyperRestore #
 #################################################################################################
@@ -372,7 +403,6 @@ def HyperVerif(hist_dict,path,scaler):
     i = 0
     for key in hist_dict.keys():
         output_dict[key] = output[i,:]
-        print (output[i,:])
         i += 1 # key iteration must not change
 
 

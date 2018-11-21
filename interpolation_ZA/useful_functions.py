@@ -296,7 +296,7 @@ def distance(a,b):
 def InterpolateAverage(neighbours,eval_grid,n_neigh):
     """
     Interpolate the rho distributions over a grid of tuples (m_H,m_A)
-    Interpolation is made by averaging the n_neigh closest neighbours
+    Interpolation is made by averaging the n_neigh closest neighbours weighted by the distance
     Inputs :
         - neighbours : dict 
             points where rho distribution is know
@@ -320,15 +320,21 @@ def InterpolateAverage(neighbours,eval_grid,n_neigh):
             dist_dict[key] = distance(val,key)
         sort_dist = sorted(dist_dict.items(), key=itemgetter(1)) # sorts dist_dict : tuple ((mH,mA),distance)
         if sort_dist[0][1] == 0:
-            n_neigh += 1 # if first is 0, add one because we will miss it
+            n_neigh += 1 # if first is 0, add one because we will not take it into account
+
+        # Get total distance of n_neigh closest neighbours #
+        total_dist = 0
+        for e in sort_dist[:n_neigh]: # Loop over the n_neigh closest neighbours
+            total_dist += e[1]
+            # don't need to remove point where dist=0 because won't impact the sum 
+
         for e in sort_dist[:n_neigh]: # Loop over the n_neigh closest neighbours
             if e[1] == 0: 
                 continue
-                # Remove if dist is zero : we don't wna tto interpolate from the same point
-            arr = neighbours[e[0]] # Gets hist array (=value of dict) corresponding to a close neighbour
+                # Remove if dist is zero : we don't want to interpolate from the same point
+            arr = neighbours[e[0]]*e[1]/total_dist # Gets hist array (=value of dict) corresponding to a close neighbour (weighted)
             hist_arr = np.add(hist_arr,arr)
 
-        hist_arr /= n_neigh # for the average
         grid [tuple(val)] = hist_arr
     
     return grid 
@@ -383,7 +389,8 @@ def EvaluateAverage(hist_dict,max_n):
     print ('Best number of neighbours -> ',best_n)
 
     # Get the hist output #
-    output_dict = InterpolateAverage(hist_dict,eval_list,best_n)
+    #output_dict = InterpolateAverage(hist_dict,eval_list,best_n)
+    output_dict = InterpolateAverage(hist_dict,eval_list,3) #TODO, use best_n
 
     return output_dict
 
@@ -415,23 +422,63 @@ def PlotComparison(hist_real,hist_avg,hist_DNN,name):
     """
 
     # Create directory #
-    path = os.path.join(os.getcwd(),name)
+    path = os.path.join(os.getcwd(),name+'/verification')
     if not os.path.isdir(path):
         os.makedirs(path)
 
     # Plot section #
-    for key in hist_real.keys():
+    for key in hist_real.keys(): # Loop over mass points 
+        # Binning parameters #
         n_bin = hist_real[key].shape[0]
-        bins = np.arange(0,n_bin/2,0.5)
+        bins_real = np.linspace(0,2.5,6)
+        bins_avg = bins_real+0.5*2/3
+        bins_DNN = bins_real+0.5/3
+
+        # Plot the bars #
         fig = plt.figure()
-        plt.hist(bins,weights=hist_avg[key],bins=n_bin,alpha=0.7,color='r',label='Averaged distribution')
-        plt.hist(bins,weights=hist_DNN[key],bins=n_bin,alpha=0.7,color='b',label='DNN distribution')
-        plt.hist(bins,weights=hist_real[key],bins=n_bin,alpha=0.7,color='g',label='True distribution')
+        p_avg = plt.bar(bins_avg,
+                hist_avg[key],
+                align='edge',
+                width=0.5/3,
+                color='y',
+                #edgecolor=c,
+                linewidth=2,
+                label='Averaged distribution')
+        p_dnn = plt.bar(bins_DNN,
+                hist_DNN[key],
+                align='edge',
+                width=0.5/3,
+                color='b',
+                #edgecolor=c,
+                linewidth=2,
+                label='DNN distribution')
+        p_real = plt.bar(bins_real,
+                hist_real[key],
+                align='edge',
+                width=0.5/3,
+                color='g',
+                #edgecolor=c,
+                linewidth=2,
+                label='True distribution')
+
+        # Optional parameters #
         plt.legend(loc='upper right')
         plt.xlabel(r'$\rho$')
         plt.ylabel('Arb. units')
         plt.title(r'Mass point $m_H=$%d GeV, $m_A$=%d GeV'%(key[0],key[1]))
-        #plt.show()
+
+        # Estethic : distinguishable groups of bins #
+        for i in range(0,6):
+            if i%2==1: 
+                p_avg[i].set_hatch('/')
+                p_dnn[i].set_hatch('/')
+                p_real[i].set_hatch('/')
+            else:
+                p_avg[i].set_hatch('\\')
+                p_dnn[i].set_hatch('\\')
+                p_real[i].set_hatch('\\')
+
+        # Save #
         fig.savefig(os.path.join(path,'m_H_%d_m_A_%d.png'%(key[0],key[1])))
 
 
