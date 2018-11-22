@@ -59,8 +59,8 @@ def main():
     opt = get_options()
 
     # Private modules #
-    from histogram import LoopOverHists
-    from average import NormalizeHist, EvaluationGrid, InterpolateAverage, AddHist, CheckHist, EvaluateAverage, PlotComparison
+    from histograms import LoopOverHists, NormalizeHist, EvaluationGrid, AddHist, CheckHist
+    from average import InterpolateAverage, EvaluateAverage, PlotComparison
     from get_link_dict import GetHistDictOld, GetHistDictNew
     from NeuralNet import HyperScan, HyperReport, HyperEvaluate, HyperDeploy, HyperReport, HyperVerif
     # Needed because PyROOT messes with argparse

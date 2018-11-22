@@ -103,17 +103,18 @@ def HyperScan(x_train,y_train,name):
     """ 
     # Talos hyperscan parameters #
     p = {
-            'lr' : [0.01,0.005,0.01,0.05,0.1,0.5],
-            'first_neuron' : [15,30],
+            'lr' : [0.07,0.08,0.09,0.1],
+            'first_neuron' : [10,20,30],
             'activation' : [relu],
-            'dropout' : (0,0.5,5),
-            'hidden_layers' : [0,1,2],
+            'dropout' : [0],
+            'hidden_layers' : [2,3,4],
             'output_activation' : [tanh],
-            'l2' : (0,0.5,5),
-            'optimizer' : [SGD],
+            'l2' : [0,0.1,0.2,0.3,0.4,0.5,1],
+            'optimizer' : [RMSprop,Nadam],
             'epochs' : [10000],
             'batch_size' : [1],
             'loss_function' : [binary_crossentropy]
+# 504
         }
     #p = {
     #        'lr' : 0.001,
@@ -133,7 +134,7 @@ def HyperScan(x_train,y_train,name):
     while os.path.exists(os.path.join(os.getcwd(),name+'_'+str(no)+'.csv')):
         no +=1
 
-    parallel_gpu_jobs(0.2)
+    parallel_gpu_jobs(0.5)
     h = Scan(  x=x_train,
                y=y_train,
                params=p,
@@ -305,8 +306,15 @@ def HyperReport(name):
 
     # Best params #
     print 
-    print ('-'*80)
-    print ('Best parameters :\n',r.best_params(metric='val_loss',n=1),end='\n\n')
+    print ('='*80)
+    print ('Best parameters sets')
+    sorted_data = r.data.sort_values('val_loss',ascending=True)
+    for i in range(0,3):
+        print ('-'*80)
+        print ('Best params n°',i+1)
+        print (sorted_data.iloc[i])
+
+    print ('='*80)
     
     # Few plots #
     path = os.path.join(os.getcwd(),name+'/report')
