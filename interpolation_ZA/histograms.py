@@ -87,3 +87,79 @@ def LoopOverHists(input_dir,hist_dict,verbose=False, return_numpy=False):
     #    if h.ClassName() == 'TH1F' or h.ClassName() == 'TH2F':
     #        hnames.append(h.GetName())
    
+###############################################################################
+# NormalizeHist #
+###############################################################################
+def NormalizeHist(dico):                                                                             
+    """
+    Normalize histograms to unit area 
+    Input :
+        - Hist with bin contents
+    Output :
+        - Hist with bin contents normalized
+    """
+    new_dico = dict()
+    for key,val in dico.items(): # For each hist, normalize
+        sumval = np.sum(val)
+        for i,v in enumerate(val):
+            val[i] /= sumval
+        new_dico [key] = val 
+    return new_dico
+
+###############################################################################
+# AddHist #
+###############################################################################
+def AddHist(dict1,dict2):
+    """
+    Add two dict of histogram bin contents
+    Input :
+        - dict1 : dict
+            contains mass point (tuple) as key and bin content (numpy array [1,6]) as values
+        - dict2 : dict
+            contains mass point (tuple) as key and bin content (numpy array [1,6]) as values
+    Output :
+        - dict_add : dict
+            = "dict1+dict2" in the values
+    """
+    dict_add = {}
+    for key,val in dict1.items(): 
+        dict_add[key] = np.add(dict1[key],dict2[key])
+
+    return dict_add
+
+###############################################################################
+# CheckHist #
+###############################################################################
+def CheckHist(dico,verbose=False):
+    """
+    Checks that the histogram has decreasing bins (because signal si concentrated at center of ellipse 
+    Input :
+        - dico : dict
+            contains mass point (tuple) as key and bin content (numpy array [1,6]) as values
+    Output : Prints cases to investigate
+    """
+    for key,val in dico.items():
+        diff = np.diff(val) # Get diff a[n+1]-a[n]
+        if diff[0]>0:
+            if verbose:
+                warnings.warn("First bin looks weird")
+                print (val)
+                # Signal not exactly at center, possible but have to check
+        check = diff[1:]>0
+        if  np.any(check):
+            warnings.warn("At least one bin is not decreasing compared to previous one, might need to check that")   
+            print ('Config : ',key)
+            print ('Bins : ',val)
+            # Bin content should decrease but might be a little variation, to be checked
+      
+###############################################################################
+# EvaluationGrid #
+###############################################################################
+            
+def EvaluationGrid(path_to_json='/nfs/scratch/fynu/asaggio/CMSSW_8_0_30/src/cp3_llbb/ZATools/scripts_ZA/ellipsesScripts/points_0.500000_0.500000.json'):
+    with open(path_to_json) as f:
+        data = json.load(f)
+    return data
+            
+
+

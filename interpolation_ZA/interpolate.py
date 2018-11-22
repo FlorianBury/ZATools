@@ -61,6 +61,7 @@ def main():
     # Private modules #
     from histograms import LoopOverHists, NormalizeHist, EvaluationGrid, AddHist, CheckHist
     from average import InterpolateAverage, EvaluateAverage, PlotComparison
+    from triangles_interpolation import InterpolateTriangles
     from get_link_dict import GetHistDictOld, GetHistDictNew
     from NeuralNet import HyperScan, HyperReport, HyperEvaluate, HyperDeploy, HyperReport, HyperVerif
     # Needed because PyROOT messes with argparse
@@ -112,6 +113,8 @@ def main():
         print ('[INFO] Using the average interpolation')
         inter_avg = InterpolateAverage(hist_dict,eval_grid,opt.average)
         print ('... Done')
+        InterpolateTriangles(hist_dict,eval_grid)
+        
 
     # Interpolate with DNN #
     print ('[INFO] Using the DNN interpolation')

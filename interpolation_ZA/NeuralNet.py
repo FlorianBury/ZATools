@@ -104,13 +104,13 @@ def HyperScan(x_train,y_train,name):
     # Talos hyperscan parameters #
     p = {
             'lr' : [0.07,0.08,0.09,0.1],
-            'first_neuron' : [10,20,30],
+            'first_neuron' : [20,30,40,50],
             'activation' : [relu],
             'dropout' : [0],
-            'hidden_layers' : [2,3,4],
+            'hidden_layers' : [3,4,5,6],
             'output_activation' : [tanh],
-            'l2' : [0,0.1,0.2,0.3,0.4,0.5,1],
-            'optimizer' : [RMSprop,Nadam],
+            'l2' : [0,0.2,0.4,0.6,0.8,1],
+            'optimizer' : [RMSprop],
             'epochs' : [10000],
             'batch_size' : [1],
             'loss_function' : [binary_crossentropy]
