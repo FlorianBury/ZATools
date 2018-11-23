@@ -39,7 +39,7 @@ def InterpolationModel(x_train,y_train,x_val,y_val,params):
     """
     Keras model for the Neural Network, used to scan the hyperparameter space by Talos
     Inputs :
-        - x_train = training inputs (aka : mH,mA)
+        - x_train = training inputs (aka : mA,mH)
         - y_train = training outputs (aka : rho distribution -> 6 bins content)
         - x_val = test inputs
         - y_val = test outputs
@@ -170,7 +170,7 @@ def HyperEvaluate(h,x_test,y_test,folds=5):
         - h = Class Scan() object
             object from class Scan coming from HyperScan 
         - x_test : numpy array [:,2] 
-            input testing values (aka : mH,mA), not used during learning 
+            input testing values (aka : mA,mH), not used during learning 
         - y_test : numpy array [:,6]
             output testing values (aka : rho distribution -> 6 bins content), not used during learning 
         - folds : int (default = 5)
@@ -386,7 +386,7 @@ def HyperVerif(hist_dict,path,scaler):
     Inputs :
         - hist_dict : dict 
             points where rho distribution is know
-                -> key = ('mH','mA') tuple
+                -> key = ('mA','mH') tuple
                 -> value = np.array of six bins
         - path : str
             name of the zip file to be used in the HyperRestore function
@@ -395,7 +395,7 @@ def HyperVerif(hist_dict,path,scaler):
     Outputs :
         - output_dict : dict
             Result of the interpolation for each mass point 
-                -> key = ('mH','mA') tuple
+                -> key = ('mA','mH') tuple
                 -> value = np.array of six bins
     """
     # Get evaluation array input from hist #                                                     

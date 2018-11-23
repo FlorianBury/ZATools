@@ -59,9 +59,9 @@ def LoopOverHists(input_dir,hist_dict,verbose=False, return_numpy=False):
             f = TFile.Open(name)
             TH1.AddDirectory(0) # Required, "Otherwise the file owns and deletes the histogram." (cfr Root forum)
             h = f.Get(hist_name)
-            mHmA = (float(re.findall(r'\d+', filename)[2]),float(re.findall(r'\d+', filename)[3])) # record mH, mA as tuple t be used as a key in the dict
+            mAmH = (float(re.findall(r'\d+', filename)[3]),float(re.findall(r'\d+', filename)[2])) # record mH, mA as tuple t be used as a key in the dict
             #mHmA = (float(re.findall(r'\d+', filename)[2])+.01*float(re.findall(r'\d+', filename)[3]),float(re.findall(r'\d+', filename)[4])+.01*float(re.findall(r'\d+', filename)[5])) # record mH, mA as tuple t be used as a key in the dict
-            TH1_dict[mHmA] = h.Clone()
+            TH1_dict[mAmH] = h.Clone()
             f.Close()
             if verbose:
                 print ("\t-> [INFO] Extracted hist")
@@ -147,9 +147,9 @@ def CheckHist(dico,verbose=False):
                 # Signal not exactly at center, possible but have to check
         check = diff[1:]>0
         if  np.any(check):
-            warnings.warn("At least one bin is not decreasing compared to previous one, might need to check that")   
-            print ('Config : ',key)
-            print ('Bins : ',val)
+            print("\t[WARNING] At least one bin is not decreasing compared to previous one, might need to check that")   
+            print ('\tConfig : ',key)
+            print ('\tBins : ',val)
             # Bin content should decrease but might be a little variation, to be checked
       
 ###############################################################################

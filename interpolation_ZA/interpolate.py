@@ -28,6 +28,8 @@ def get_options():
     parser = argparse.ArgumentParser(description='Compare names of input and output files for matches and potentiel failed files')
     parser.add_argument('-a','--average', action='store', required=False, type=int, default=0,
         help='If averaged interpolation is required -> input number of neighbours')
+    parser.add_argument('-t','--triangle', action='store_true', required=False, default=False,
+        help='If triangle interpolation is required')
     parser.add_argument('-s','--scan', action='store', required=False, type=str, default='',
         help='If scan for hyperparameters to be performed [edit NeuralNet.py] and given name')
     parser.add_argument('-r','--reporting', action='store', required=False, type=str, default='',
@@ -61,7 +63,7 @@ def main():
     # Private modules #
     from histograms import LoopOverHists, NormalizeHist, EvaluationGrid, AddHist, CheckHist
     from average import InterpolateAverage, EvaluateAverage, PlotComparison
-    from triangles_interpolation import InterpolateTriangles
+    from triangles_interpolation import InterpolateTriangles, EvaluateTriangles
     from get_link_dict import GetHistDictOld, GetHistDictNew
     from NeuralNet import HyperScan, HyperReport, HyperEvaluate, HyperDeploy, HyperReport, HyperVerif
     # Needed because PyROOT messes with argparse
@@ -113,7 +115,12 @@ def main():
         print ('[INFO] Using the average interpolation')
         inter_avg = InterpolateAverage(hist_dict,eval_grid,opt.average)
         print ('... Done')
-        InterpolateTriangles(hist_dict,eval_grid)
+        
+    # Interpolate with triangle #
+    if opt.triangle:
+        print ('[INFO] Using the triangle interpolation')
+        inter_tri = InterpolateTriangles(hist_dict,eval_grid)
+        print ('... Done')
         
 
     # Interpolate with DNN #
@@ -168,12 +175,17 @@ def main():
         check_avg = EvaluateAverage(hist_dict,20)
         print ('... Done')
 
+        print ('[INFO] Cross check verification with triangles')
+        check_tri = EvaluateTriangles(hist_dict)
+        print (check_tri)
+        print ('... Done')
+
         print ('[INFO] Cross check verification with Neural Network')
         check_DNN = HyperVerif(hist_dict,path=opt.verification+'.zip',scaler=scaler)
         print ('... Done')
     
         print ('[INFO] Comparison plots')
-        PlotComparison(hist_dict,check_avg,check_DNN,opt.verification)
+        PlotComparison(hist_dict,check_avg,check_tri,check_DNN,opt.verification)
         print ('... Done')
 
 

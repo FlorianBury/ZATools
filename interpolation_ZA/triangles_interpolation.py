@@ -21,36 +21,69 @@ def InterpolateTriangles(hist_dict,eval_grid):
     Inputs :
         - neighbours : hist_dict 
             points where rho distribution is know
-                -> key = ('mH','mA') tuple
+                -> key = ('mA','mH') tuple
                 -> value = np.array of six bins
         - eval_grid : list of list (nx2 elements)
             contains the points on which interpolation is to be done
     Outputs :
         - grid = dict 
             interpolated points
-                -> key = ('mH','mA') tuple
+                -> key = ('mA','mH') tuple
                 -> value = np.array of six bins
     """
-    grid = {}
-
     # Separates each bin into lists of [x=mH,y=mA,z=bin_value] #
-    bin1 = [(key[1],key[0],val[0]) for key,val in hist_dict.items()]
-    bin2 = [(key[1],key[0],val[1]) for key,val in hist_dict.items()]
-    bin3 = [(key[1],key[0],val[2]) for key,val in hist_dict.items()]
-    bin4 = [(key[1],key[0],val[3]) for key,val in hist_dict.items()]
-    bin5 = [(key[1],key[0],val[4]) for key,val in hist_dict.items()]
-    bin6 = [(key[1],key[0],val[5]) for key,val in hist_dict.items()]
+    bin1 = [(key[0],key[1],val[0]) for key,val in hist_dict.items()]
+    bin2 = [(key[0],key[1],val[1]) for key,val in hist_dict.items()]
+    bin3 = [(key[0],key[1],val[2]) for key,val in hist_dict.items()]
+    bin4 = [(key[0],key[1],val[3]) for key,val in hist_dict.items()]
+    bin5 = [(key[0],key[1],val[4]) for key,val in hist_dict.items()]
+    bin6 = [(key[0],key[1],val[5]) for key,val in hist_dict.items()]
     # bin_ -> bin_[i][0] = x_i (mA)
     #      -> bin_[i][1] = y_i (mH)
     #      -> bin_[i][2] = z_1 (bin content) 
-    InterpolateBin(bin1,eval_grid,'Bin1')
-    InterpolateBin(bin2,eval_grid,'Bin2')
-    InterpolateBin(bin3,eval_grid,'Bin3')
-    InterpolateBin(bin4,eval_grid,'Bin4')
-    InterpolateBin(bin5,eval_grid,'Bin5')
-    InterpolateBin(bin6,eval_grid,'Bin6')
+    # Interpolation #
+    print ('='*80)
+    print ('Starting interpolation on bin 1')
+    out1 = InterpolateBin(bin1,eval_grid,'Bin1')
+    print ('-'*80)
+    print ('Starting interpolation on bin 2')
+    out2 = InterpolateBin(bin2,eval_grid,'Bin2')
+    print ('-'*80)
+    print ('Starting interpolation on bin 3')
+    out3 = InterpolateBin(bin3,eval_grid,'Bin3')
+    print ('-'*80)
+    print ('Starting interpolation on bin 4')
+    out4 = InterpolateBin(bin4,eval_grid,'Bin4')
+    print ('-'*80)
+    print ('Starting interpolation on bin 5')
+    out5 = InterpolateBin(bin5,eval_grid,'Bin5')
+    print ('-'*80)
+    print ('Starting interpolation on bin 6')
+    out6 = InterpolateBin(bin6,eval_grid,'Bin6')
+    print ('-'*80)
     
+    # Concatenation and dict #
+    print ('Concatenation of the outputs')
+    grid = {}
+    for i in range(0,len(out1)):
+        print ([out1[i][0],out2[i][0],out3[i][0],out4[i][0],out5[i][0],out6[i][0]])
+        print ([out1[i][1],out2[i][1],out3[i][1],out4[i][1],out5[i][1],out6[i][1]])
+        arr = np.array([out1[i][2],out2[i][2],out3[i][2],out4[i][2],out5[i][2],out6[i][2]])
+        grid[(out1[i][0],out1[i][1])] = arr
 
+    return grid
+
+    #out = [(x1,y1,z1,z2,z3,z4,z5,z6) for x1,y1,z1 in out1 
+    #                                 for x2,y2,z2 in out2
+    #                                 for x3,y3,z3 in out3
+    #                                 for x4,y4,z4 in out4
+    #                                 for x5,y5,z5 in out5
+    #                                 for x6,y6,z6 in out6]
+                                     #if x1==x2 and x2==x3 and x3==x4 and x4==x5 and x5==x6
+                                     #if y1==y2 and y2==y3 and y3==y4 and y4==y5 and y5==y6
+                                     #if z1==z2 and z2==z3 and z3==z4 and z4==z5 and z5==z6]
+    #grid = dict(((o[0],o[1]),(o[2],o[3],o[4],o[5])) for o in out)
+                            
 ###############################################################################
 # BuildGraph #
 ###############################################################################
@@ -80,7 +113,7 @@ def InterpolateBin(bin_coord,eval_list,name):
         - bin_coord : list
             list of ((x,y,z) to learn interpolation 
         - eval_list : list
-            list of (mH,mA)=(y,x) that will be interpolated using a TGraph2D
+            list of (mA,mH)=(x,y) that will be interpolated using a TGraph2D
         - name : str
             name of the bin for display purposes
     Outputs :
@@ -90,17 +123,13 @@ def InterpolateBin(bin_coord,eval_list,name):
     graph = BuildGraph(bin_coord)
 
     PlotGraph(graph,eval_list,name)
-    return
 
     z = []
-    for x,y in bin_coord:
-        #z.append(graph.Interpolate(x,y))
-        z.append(graph.Interpolate(x[0],x[1]))
-        print (x,graph.Interpolate(x[0]+10.2,x[1]+20.5),y)
-        
+    for x,y in eval_list:
+        z.append(graph.Interpolate(x,y))
+
     output = [(i[0],i[1],o) for i in eval_list for o in z]      
-    print (output)
-    #return output
+    return output
 
 ###############################################################################
 # PlotGraph #
@@ -155,6 +184,16 @@ def PlotGraph(graph,eval_list,name):
     c1.Print(path+name+'.pdf')
     
 
+###############################################################################
+# EvaluateTriangles #
+###############################################################################
+def EvaluateTriangles(hist_dict):
+    # Turn keys from dict into list of list #
+    eval_list = []
+    for key in hist_dict.keys():
+        eval_list.append(list((key[0],key[1])))
     
+    out_dict = InterpolateTriangles(hist_dict,eval_list)
+    return out_dict
 
 

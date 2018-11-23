@@ -28,12 +28,12 @@ def distance(a,b):
 
 def InterpolateAverage(neighbours,eval_grid,n_neigh):
     """
-    Interpolate the rho distributions over a grid of tuples (m_H,m_A)
+    Interpolate the rho distributions over a grid of tuples (m_A,m_H)
     Interpolation is made by averaging the n_neigh closest neighbours weighted by the distance
     Inputs :
         - neighbours : dict 
             points where rho distribution is know
-                -> key = ('mH','mA') tuple
+                -> key = ('mA','mH') tuple
                 -> value = np.array of six bins
         - eval_grid : list of list (nx2 elements)
             contains the points on which interpolation is to be done
@@ -42,7 +42,7 @@ def InterpolateAverage(neighbours,eval_grid,n_neigh):
     Outputs :
         - grid = dict 
             interpolated points
-                -> key = ('mH','mA') tuple
+                -> key = ('mA','mH') tuple
                 -> value = np.array of six bins
     """
     grid = {} # To be returned
@@ -51,7 +51,7 @@ def InterpolateAverage(neighbours,eval_grid,n_neigh):
         hist_arr = np.zeros(6) # will be the hist array for the grid element
         for key in neighbours: # Loop over neighbours to find the closests
             dist_dict[key] = distance(val,key)
-        sort_dist = sorted(dist_dict.items(), key=itemgetter(1)) # sorts dist_dict : tuple ((mH,mA),distance)
+        sort_dist = sorted(dist_dict.items(), key=itemgetter(1)) # sorts dist_dict : tuple ((mA,mH),distance)
         if sort_dist[0][1] == 0:
             n_neigh += 1 # if first is 0, add one because we will not take it into account
 
@@ -83,14 +83,14 @@ def EvaluateAverage(hist_dict,max_n):
     Inputs :
         - hist_dict : dict 
             points where rho distribution is know
-                -> key = ('mH','mA') tuple
+                -> key = ('mA','mH') tuple
                 -> value = np.array of six bins
         - max_n : int 
             maximum number of neighbours to be checked
     Outputs :
         - output_dict : dict
             Result of the interpolation for each mass point 
-                -> key = ('mH','mA') tuple
+                -> key = ('mA','mH') tuple
                 -> value = np.array of six bins
 
     """
@@ -130,21 +130,21 @@ def EvaluateAverage(hist_dict,max_n):
 ###############################################################################
 # PlotComparison #
 ###############################################################################
-def PlotComparison(hist_real,hist_avg,hist_DNN,name):
+def PlotComparison(hist_real,hist_avg,hist_tri,hist_DNN,name):
     """
     Takes 3 series of histograms defined in dictionaries : the real one and the two interpolations. Plot the comparisons 
     Inputs :
         - hist_real : dict
             Contains the real rho distribution 
-                key -> (mH,mH) mass configuration
+                key -> (mA,mH) mass configuration
                 value -> 6 bin contents of the rho distribution 
         - hist_avg : dict
             Contains the interpolation from the average method
-                key -> (mH,mH) mass configuration
+                key -> (mA,mH) mass configuration
                 value -> 6 bin contents of the rho distribution 
         - hist_real : dict
             Contains the interpolation from the DNN method
-                key -> (mH,mH) mass configuration
+                key -> (mA,mH) mass configuration
                 value -> 6 bin contents of the rho distribution 
         - name : str
             Name of the output directory
@@ -164,33 +164,38 @@ def PlotComparison(hist_real,hist_avg,hist_DNN,name):
         # Binning parameters #
         n_bin = hist_real[key].shape[0]
         bins_real = np.linspace(0,2.5,6)
-        bins_avg = bins_real+0.5*2/3
-        bins_DNN = bins_real+0.5/3
+        bins_DNN = bins_real+0.5/4
+        bins_tri = bins_real+0.5*3/4
+        bins_avg = bins_real+0.5*2/4
 
         # Plot the bars #
         fig = plt.figure()
         p_avg = plt.bar(bins_avg,
                 hist_avg[key],
                 align='edge',
-                width=0.5/3,
+                width=0.5/4,
                 color='y',
-                #edgecolor=c,
                 linewidth=2,
                 label='Averaged distribution')
+        #p_tri = plt.bar(bins_tri,
+        #        hist_tri[key],
+        #        align='edge',
+        #        width=0.5/4,
+        #        color='r',
+        #        linewidth=2,
+        #        label='Delaunay triangle distribution')
         p_dnn = plt.bar(bins_DNN,
                 hist_DNN[key],
                 align='edge',
-                width=0.5/3,
+                width=0.5/4,
                 color='b',
-                #edgecolor=c,
                 linewidth=2,
                 label='DNN distribution')
         p_real = plt.bar(bins_real,
                 hist_real[key],
                 align='edge',
-                width=0.5/3,
+                width=0.5/4,
                 color='g',
-                #edgecolor=c,
                 linewidth=2,
                 label='True distribution')
 
@@ -198,21 +203,23 @@ def PlotComparison(hist_real,hist_avg,hist_DNN,name):
         plt.legend(loc='upper right')
         plt.xlabel(r'$\rho$')
         plt.ylabel('Arb. units')
-        plt.title(r'Mass point $m_H=$%d GeV, $m_A$=%d GeV'%(key[0],key[1]))
+        plt.title(r'Mass point $m_H=$%d GeV, $m_A$=%d GeV'%(key[1],key[0]))
 
         # Estethic : distinguishable groups of bins #
         for i in range(0,6):
             if i%2==1: 
                 p_avg[i].set_hatch('/')
+                #p_tri[i].set_hatch('/')
                 p_dnn[i].set_hatch('/')
                 p_real[i].set_hatch('/')
             else:
                 p_avg[i].set_hatch('\\')
+                #p_tri[i].set_hatch('\\')
                 p_dnn[i].set_hatch('\\')
                 p_real[i].set_hatch('\\')
 
         # Save #
-        fig.savefig(os.path.join(path,'m_H_%d_m_A_%d.png'%(key[0],key[1])))
+        fig.savefig(os.path.join(path,'m_H_%d_m_A_%d.png'%(key[1],key[0])))
 
 
 
