@@ -38,6 +38,10 @@ def get_options():
         help='Wether to evaluate the models with cross validation : provide number of folds.\nCAUTION : requires the option --scan' )
     parser.add_argument('-d','--deploy', action='store', required=False, type=str, default='',
         help='Wether to deploy the model, provide the name\n.CAUTION : requires the option --scan.\nWARNING : if option --evaluate, will select the best model according to cross validation,\nif not, takes the one with lowest val_loss')
+    parser.add_argument('-i','--interpolate', action='store', required=False, type=str, default='',
+        help='Interpolation with the Neural Network. Must provide the name of the .zip package to apply the interpolation')
+    parser.add_argument('-c','--compare', action='store_true', required=False, default=False,
+        help='Whether to compare the interpolation between the different techniques. WARNING : at least -i option must have been used ')
     parser.add_argument('-v','--verification', action='store', required=False, default='', type=str,
         help='Wether to apply the verification cross check with average and DNN techniques, aka apply regression on know points. For average, best number of neighbours is found based on chi2 minimization, for the DNN the path to a Talos zip file must be provided (without .zip)')
 
@@ -51,6 +55,10 @@ def get_options():
         warnings.warn('--deploy options requires --scan option')
         sys.exit(1)
 
+    if opt.compare and opt.interpolate=='':
+        warnings.warn('--compare must be used with at least --interpolate')
+        sys.exit(1)
+
     return opt
 
 def main():
@@ -62,10 +70,11 @@ def main():
 
     # Private modules #
     from histograms import LoopOverHists, NormalizeHist, EvaluationGrid, AddHist, CheckHist
-    from average import InterpolateAverage, EvaluateAverage, PlotComparison
+    from average import InterpolateAverage, EvaluateAverage
     from triangles_interpolation import InterpolateTriangles, EvaluateTriangles
+    from comparison import PlotComparison
     from get_link_dict import GetHistDictOld, GetHistDictNew
-    from NeuralNet import HyperScan, HyperReport, HyperEvaluate, HyperDeploy, HyperReport, HyperVerif
+    from NeuralNet import HyperScan, HyperReport, HyperEvaluate, HyperDeploy, HyperReport, HyperVerif, HyperRestore
     # Needed because PyROOT messes with argparse
 
     #############################################################################################
@@ -124,7 +133,6 @@ def main():
         
 
     # Interpolate with DNN #
-    print ('[INFO] Using the DNN interpolation')
     x_DNN = np.empty((0,2)) # Inputs (mH,mA) of the DNN
     y_DNN = np.empty((0,6)) # Outputs (6 bins of rho dist) of the DNN
     # Need to prepare inputs and outputs #
@@ -146,7 +154,7 @@ def main():
         h = HyperScan(x_train,y_train,name=opt.scan)
         print ('... Done')
 
-    # Make HyperReport #
+    # Make HyperEvaluate #
     best_model = -1
     if opt.evaluate != 0: 
         print ('[INFO] Starting HyperEvaluate') 
@@ -166,6 +174,33 @@ def main():
         HyperReport(opt.reporting)
         print ('... Done')
 
+    # Make HyperRestore #
+    if opt.interpolate!='': 
+        print ('[INFO] Starting interpolation with model') 
+        inputs = np.asarray(eval_grid)
+        inter_DNN = HyperRestore(inputs,scaler,opt.interpolate+'.zip')
+        print ('... Done')
+
+    # Comparison between different techniques #
+    if opt.compare:
+        inter_dict = {} # Will contain the dict of the different interpolation outputs (which are dict also)
+        try :
+            inter_dict['Average'] = inter_avg
+            print ('Average interpolation detected')
+        except: 
+            print ('Average interpolation not detected')
+        try :
+            inter_dict['Delaunay Triangles'] = inter_tri
+            print ('Triangle interpolation detected')
+        except: 
+            print ('Triangle interpolation not detected')
+        try :
+            inter_dict['DNN'] = inter_DNN
+            print ('DNN interpolation detected')
+        except: 
+            print ('DNN interpolation not detected')
+
+        PlotComparison(inter_dict,opt.interpolate+'/interpolation/')
 
     #############################################################################################
     # Verification #
@@ -177,15 +212,16 @@ def main():
 
         print ('[INFO] Cross check verification with triangles')
         check_tri = EvaluateTriangles(hist_dict)
-        print (check_tri)
         print ('... Done')
 
         print ('[INFO] Cross check verification with Neural Network')
-        check_DNN = HyperVerif(hist_dict,path=opt.verification+'.zip',scaler=scaler)
+        check_DNN = HyperVerif(hist_dict,scaler=scaler,path=opt.verification+'.zip')
         print ('... Done')
+
+        check_dict = {'True':hist_dict,'Average':check_avg,'Delaunay Triangle':check_tri,'DNN':check_DNN}
     
         print ('[INFO] Comparison plots')
-        PlotComparison(hist_dict,check_avg,check_tri,check_DNN,opt.verification)
+        PlotComparison(check_dict,opt.verification+'/verification/')
         print ('... Done')
 
 

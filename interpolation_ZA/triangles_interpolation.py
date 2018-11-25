@@ -61,13 +61,16 @@ def InterpolateTriangles(hist_dict,eval_grid):
     print ('Starting interpolation on bin 6')
     out6 = InterpolateBin(bin6,eval_grid,'Bin6')
     print ('-'*80)
+
     
     # Concatenation and dict #
     print ('Concatenation of the outputs')
     grid = {}
     for i in range(0,len(out1)):
-        print ([out1[i][0],out2[i][0],out3[i][0],out4[i][0],out5[i][0],out6[i][0]])
-        print ([out1[i][1],out2[i][1],out3[i][1],out4[i][1],out5[i][1],out6[i][1]])
+        if out1[i][0]!=out2[i][0] or out1[i][0]!=out3[i][0] or out1[i][0]!=out4[i][0] or out1[i][0]!=out5[i][0] or out1[i][0]!=out6[i][0]:
+            print ('[WARNING] m_A are not compatible !')
+        if out1[i][1]!=out2[i][1] or out1[i][1]!=out3[i][1] or out1[i][1]!=out4[i][1] or out1[i][1]!=out5[i][1] or out1[i][1]!=out6[i][1]:
+            print ('[WARNING] m_H are not compatible !')
         arr = np.array([out1[i][2],out2[i][2],out3[i][2],out4[i][2],out5[i][2],out6[i][2]])
         grid[(out1[i][0],out1[i][1])] = arr
 
@@ -98,6 +101,9 @@ def BuildGraph(coord):
             built from the coordinates 
     """
     graph = TGraph2D()    
+    graph.SetNpx(500)
+    graph.SetNpy(500)
+
     for i in range(0,len(coord)):
         graph.SetPoint(i,coord[i][0],coord[i][1],coord[i][2])
 
@@ -128,7 +134,7 @@ def InterpolateBin(bin_coord,eval_list,name):
     for x,y in eval_list:
         z.append(graph.Interpolate(x,y))
 
-    output = [(i[0],i[1],o) for i in eval_list for o in z]      
+    output = [(a[0][0],a[0][1],a[1]) for a in zip(eval_list,z)]      
     return output
 
 ###############################################################################

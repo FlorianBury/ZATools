@@ -103,16 +103,16 @@ def HyperScan(x_train,y_train,name):
     """ 
     # Talos hyperscan parameters #
     p = {
-            'lr' : [0.07,0.08,0.09,0.1],
+            'lr' : [0.09],
             'first_neuron' : [20,30,40,50],
             'activation' : [relu],
             'dropout' : [0],
             'hidden_layers' : [3,4,5,6],
             'output_activation' : [tanh],
-            'l2' : [0,0.2,0.4,0.6,0.8,1],
+            'l2' : [0,0.1,0.2,0.3],
             'optimizer' : [RMSprop],
             'epochs' : [10000],
-            'batch_size' : [1],
+            'batch_size' : [1,10,15,20],
             'loss_function' : [binary_crossentropy]
 # 504
         }
@@ -141,7 +141,7 @@ def HyperScan(x_train,y_train,name):
                dataset_name=name,
                experiment_no=str(no),
                model=InterpolationModel,
-               val_split=0.2,
+               val_split=0.3,
                reduction_metric='val_loss',
                #grid_downsample=0.1,
                #random_method='lhs',
@@ -352,7 +352,7 @@ def HyperReport(name):
 #################################################################################################
 # HyperRestore #
 #################################################################################################
-def HyperRestore(inputs,path):
+def HyperRestore(inputs,scaler,path):
     """
     Retrieve a zip containing the best model, parameters, x and y data, ... and restores it
     Produces an output from the input numpy array
@@ -372,14 +372,18 @@ def HyperRestore(inputs,path):
     a = Restore(path)
 
     # Output of the model #
-    output = a.model.predict(inputs)
+    inputs_scaled = scaler.transform(inputs)
+    outputs = a.model.predict(inputs_scaled)
+    out_dict = {}
+    for i in range(0,outputs.shape[0]):
+        out_dict[(inputs[i,0],inputs[i,1])] = outputs[i,:]
     
-    return output
+    return out_dict
 
 #################################################################################################
 # HyperVerif #
 #################################################################################################
-def HyperVerif(hist_dict,path,scaler):
+def HyperVerif(hist_dict,scaler,path):
     """
     Peforms the DNN interpolation for know points as a cross-check
     Produce comparison plots 
@@ -403,15 +407,8 @@ def HyperVerif(hist_dict,path,scaler):
     for key in hist_dict.keys():
         eval_arr = np.append(eval_arr,np.asarray(key).reshape(-1,2),axis=0)
 
-    eval_arr_preprocess = scaler.transform(eval_arr) # Must rescale the inputs as in training
 
     # Performs the evaluation by the network #
-    output = HyperRestore(eval_arr_preprocess,path)
-    output_dict = {}
-    i = 0
-    for key in hist_dict.keys():
-        output_dict[key] = output[i,:]
-        i += 1 # key iteration must not change
+    output = HyperRestore(eval_arr,scaler,path)
 
-
-    return output_dict
+    return output
