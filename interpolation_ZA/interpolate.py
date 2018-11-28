@@ -1,20 +1,14 @@
-#!/usr/bin/env python 
+#!/usr/bin/env python
 
-import glob
 import os
-import re
-import math
-import socket
-import json
 import sys
 import warnings
 
-import array
+import argparse
 import numpy as np
-import argparse 
 
 from sklearn import preprocessing
-from sklearn.model_selection import train_test_split 
+from sklearn.model_selection import train_test_split
 
 from scipy.stats import chisquare
 
@@ -22,7 +16,7 @@ import matplotlib.pyplot as plt
 
 
 def get_options():
-    """                                         
+    """
     Parse and return the arguments provided by the user.
     """
     parser = argparse.ArgumentParser(description='Compare names of input and output files for matches and potentiel failed files')
@@ -74,7 +68,7 @@ def main():
     from triangles_interpolation import InterpolateTriangles, EvaluateTriangles
     from comparison import PlotComparison
     from get_link_dict import GetHistDictOld, GetHistDictNew
-    from NeuralNet import HyperScan, HyperReport, HyperEvaluate, HyperDeploy, HyperReport, HyperVerif, HyperRestore
+    from NeuralNet import HyperScan, HyperReport, HyperEvaluate, HyperDeploy, HyperVerif, HyperRestore
     # Needed because PyROOT messes with argparse
 
     #############################################################################################
@@ -101,9 +95,9 @@ def main():
 
     print ('-'*80)
     # Checks shape of distributions #
-    print ('[INFO] Checking MuMu sample') 
+    print ('[INFO] Checking MuMu sample')
     CheckHist(hist_dict_MuMu,verbose=False)
-    print ('[INFO] Checking ElEl sample') 
+    print ('[INFO] Checking ElEl sample')
     CheckHist(hist_dict_ElEl,verbose=False)
     print ('-'*80)
 
@@ -113,7 +107,7 @@ def main():
 
     # Get grid on which evaluate the network for the interpolation #
     print ('[INFO] Extracting output grid')
-    eval_grid = EvaluationGrid() 
+    eval_grid = EvaluationGrid()
     print ('... Done')
 
     #############################################################################################
@@ -124,13 +118,13 @@ def main():
         print ('[INFO] Using the average interpolation')
         inter_avg = InterpolateAverage(hist_dict,eval_grid,opt.average)
         print ('... Done')
-        
+
     # Interpolate with triangle #
     if opt.triangle:
         print ('[INFO] Using the triangle interpolation')
         inter_tri = InterpolateTriangles(hist_dict,eval_grid)
         print ('... Done')
-        
+
 
     # Interpolate with DNN #
     x_DNN = np.empty((0,2)) # Inputs (mH,mA) of the DNN
@@ -141,7 +135,7 @@ def main():
         y_DNN = np.append(y_DNN,[v],axis=0)
 
     # Splitting and preprocessing
-    x_train,x_test,y_train,y_test = train_test_split(x_DNN,y_DNN,test_size=0.0) # TODO change when enough data
+    x_train,x_test,y_train,y_test = train_test_split(x_DNN,y_DNN,test_size=0.3) # TODO change when enough data
 
     scaler = preprocessing.StandardScaler().fit(x_train)
     x_train = scaler.transform(x_train)
@@ -149,34 +143,37 @@ def main():
 
     # Make HyperScan #
     if opt.scan != '':
-        print ('[INFO] Starting Hyperscan') 
+        print ('[INFO] Starting Hyperscan')
         print ("Total training size : ",x_train.shape[0],'/',x_DNN.shape[0])
         h = HyperScan(x_train,y_train,name=opt.scan)
         print ('... Done')
 
     # Make HyperEvaluate #
     best_model = -1
-    if opt.evaluate != 0: 
-        print ('[INFO] Starting HyperEvaluate') 
+    if opt.evaluate != 0:
+        print ('[INFO] Starting HyperEvaluate')
         print ("Total validation size : ",x_test.shape[0],'/',x_DNN.shape[0])
+        if (x_test.shape[0]==0):
+            print ("[WARNING] No data to apply cross validation, not applied")
+            return # Avoids being stuck with no data in evaliation 
         best_model = HyperEvaluate(h,x_test,y_test,opt.evaluate)
         print ('... Done')
 
     # Make HyperDeploy #
-    if opt.deploy!='': 
-        print ('[INFO] Starting HyperDeploy') 
+    if opt.deploy!='':
+        print ('[INFO] Starting HyperDeploy')
         HyperDeploy(h,opt.deploy,best_model)
         print ('... Done')
 
     # Make HyperReport #
-    if opt.reporting!='': 
-        print ('[INFO] Analyzing with Report') 
+    if opt.reporting!='':
+        print ('[INFO] Analyzing with Report')
         HyperReport(opt.reporting)
         print ('... Done')
 
     # Make HyperRestore #
-    if opt.interpolate!='': 
-        print ('[INFO] Starting interpolation with model') 
+    if opt.interpolate!='':
+        print ('[INFO] Starting interpolation with model')
         inputs = np.asarray(eval_grid)
         inter_DNN = HyperRestore(inputs,scaler,opt.interpolate+'.zip')
         print ('... Done')
@@ -187,17 +184,17 @@ def main():
         try :
             inter_dict['Average'] = inter_avg
             print ('Average interpolation detected')
-        except: 
+        except:
             print ('Average interpolation not detected')
         try :
             inter_dict['Delaunay Triangles'] = inter_tri
             print ('Triangle interpolation detected')
-        except: 
+        except:
             print ('Triangle interpolation not detected')
         try :
             inter_dict['DNN'] = inter_DNN
             print ('DNN interpolation detected')
-        except: 
+        except:
             print ('DNN interpolation not detected')
 
         PlotComparison(inter_dict,opt.interpolate+'/interpolation/')
@@ -207,7 +204,7 @@ def main():
     #############################################################################################
     if opt.verification!='':
         print ('[INFO] Cross check verification with average')
-        check_avg = EvaluateAverage(hist_dict,20)
+        check_avg = EvaluateAverage(hist_dict, 20)
         print ('... Done')
 
         print ('[INFO] Cross check verification with triangles')
@@ -219,12 +216,11 @@ def main():
         print ('... Done')
 
         check_dict = {'True':hist_dict,'Average':check_avg,'Delaunay Triangle':check_tri,'DNN':check_DNN}
-    
+
         print ('[INFO] Comparison plots')
         PlotComparison(check_dict,opt.verification+'/verification/')
         print ('... Done')
 
 
-if __name__ == "__main__":                                     
+if __name__ == "__main__":
     main()
-

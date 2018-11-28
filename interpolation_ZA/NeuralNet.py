@@ -1,4 +1,4 @@
-import glob 
+import glob
 import os
 import re
 import math
@@ -12,7 +12,7 @@ import numpy as np
 import keras
 from keras import utils
 from keras.layers import Input, Dense, Concatenate, BatchNormalization, LeakyReLU, Lambda, Dropout
-from keras.losses import binary_crossentropy, mean_squared_error 
+from keras.losses import binary_crossentropy, mean_squared_error
 from keras.optimizers import RMSprop, Adam, Nadam, SGD
 from keras.activations import relu, elu, selu, softmax, tanh
 from keras.models import Model, model_from_json, load_model
@@ -21,12 +21,12 @@ from keras.regularizers import l1,l2
 import keras.backend as K
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' # removes annoying warning
 
-import talos
 from talos import Scan, Reporting, Predict, Evaluate, Deploy, Restore
 from talos.utils.best_model import *
 from talos.model.layers import *
 from talos.model.normalizers import lr_normalizer
 from talos.utils.gpu_utils import parallel_gpu_jobs
+import talos
 
 import astetik as ast # For the plot section
 
@@ -47,7 +47,7 @@ def InterpolationModel(x_train,y_train,x_val,y_val,params):
     Outputs :
         - out =  predicted outputs from network
         - model = fitted models with weights
-    """     
+    """
     # Design network #
     IN = Input(shape=(x_train.shape[1],),name='IN')
     L1 = Dense(params['first_neuron'],
@@ -56,7 +56,7 @@ def InterpolationModel(x_train,y_train,x_val,y_val,params):
     HIDDEN = hidden_layers(params,6).API(L1)
     OUT = Dense(6,activation=params['output_activation'],name='OUT')(HIDDEN)
 
-    # Define model #    
+    # Define model #
     model = Model(inputs=[IN], outputs=[OUT])
     #utils.print_summary(model=model) #used to print model
 
@@ -68,51 +68,51 @@ def InterpolationModel(x_train,y_train,x_val,y_val,params):
     # Compile #
     model.compile(optimizer=params['optimizer'](lr_normalizer(params['lr'], params['optimizer'])),
                   loss={'OUT':params['loss_function']},
-                  metrics=['accuracy']) 
+                  metrics=['accuracy'])
 
     # Fit #
     out = model.fit({'IN':x_train},
                     {'OUT':y_train},
-                    sample_weight=None,  
+                    sample_weight=None,
                     epochs=params['epochs'],
                     batch_size=params['batch_size'],
                     verbose=0,
                     validation_data=({'IN':x_val},{'OUT':y_val}),
                     callbacks=Callback_list
                     )
-                    
+
     return out,model
 
 #################################################################################################
 # HyperScan #
 #################################################################################################
-def HyperScan(x_train,y_train,name):  
-    """ 
-    Performs the scan for hyperparameters 
+def HyperScan(x_train,y_train,name):
+    """
+    Performs the scan for hyperparameters
     Inputs :
-        - x_train : numpy array [:,2] 
-            input training values (aka : mH,mA) 
+        - x_train : numpy array [:,2]
+            input training values (aka : mH,mA)
         - y_train : numpy array [:,6]
             output training values (aka : rho distribution -> 6 bins content)
         - name : str
             name of the dataset
-    Outputs : 
+    Outputs :
         - h = Class Scan() object
-            object from class Scan to be used by other functions    
+            object from class Scan to be used by other functions
     Reference : /home/ucl/cp3/fbury/.local/lib/python3.6/site-packages/talos/scan/Scan.py
-    """ 
+    """
     # Talos hyperscan parameters #
     p = {
             'lr' : [0.09],
-            'first_neuron' : [20,30,40,50],
+            'first_neuron' : [30,40],
             'activation' : [relu],
-            'dropout' : [0],
-            'hidden_layers' : [3,4,5,6],
+            'dropout' : [0,0.5],
+            'hidden_layers' : [4,5],
             'output_activation' : [tanh],
-            'l2' : [0,0.1,0.2,0.3],
+            'l2' : [0,0.2,0.4],
             'optimizer' : [RMSprop],
             'epochs' : [10000],
-            'batch_size' : [1,10,15,20],
+            'batch_size' : [1],
             'loss_function' : [binary_crossentropy]
 # 504
         }
@@ -153,7 +153,7 @@ def HyperScan(x_train,y_train,name):
             )
 
     # returns the experiment configuration details
-    print 
+    print
     print ('='*80,end='\n\n')
     print ('Details',end='\n\n')
     print (h.details)
@@ -165,22 +165,22 @@ def HyperScan(x_train,y_train,name):
 #################################################################################################
 def HyperEvaluate(h,x_test,y_test,folds=5):
     """
-    Performs the cross-validation of the different models 
+    Performs the cross-validation of the different models
     Inputs :
         - h = Class Scan() object
-            object from class Scan coming from HyperScan 
-        - x_test : numpy array [:,2] 
-            input testing values (aka : mA,mH), not used during learning 
+            object from class Scan coming from HyperScan
+        - x_test : numpy array [:,2]
+            input testing values (aka : mA,mH), not used during learning
         - y_test : numpy array [:,6]
-            output testing values (aka : rho distribution -> 6 bins content), not used during learning 
+            output testing values (aka : rho distribution -> 6 bins content), not used during learning
         - folds : int (default = 5)
             Number of cross-validation folds
-    Outputs : 
+    Outputs :
         - idx_best_eval : idx
             Index of best model according to cross-validation
 
-    Reference : 
-        /home/ucl/cp3/fbury/.local/lib/python3.6/site-packages/talos/commands/evaluate.py 
+    Reference :
+        /home/ucl/cp3/fbury/.local/lib/python3.6/site-packages/talos/commands/evaluate.py
     """
 
 
@@ -189,7 +189,7 @@ def HyperEvaluate(h,x_test,y_test,folds=5):
     n_rounds = r.rounds()
 
     # Evaluation #
-    print 
+    print
     print ('='*80,end='\n\n')
     scores = []
     idx_best_model = best_model(h, 'val_loss', asc=True)
@@ -203,7 +203,7 @@ def HyperEvaluate(h,x_test,y_test,folds=5):
                            shuffle=True,
                            metric='val_loss',
                            average='macro',
-                           asc=True  # because loss 
+                           asc=True  # because loss
                           )
         score.append(i) # score = [mean(error),std(error),model_index]
         scores.append(score)
@@ -217,25 +217,25 @@ def HyperEvaluate(h,x_test,y_test,folds=5):
     for m_err,std_err, idx in sorted_scores:
         count += 1
         if count == 10:
-            print ('...') 
+            print ('...')
         if count >= 10 and n_rounds-count>5: # avoids printing intermediate useless states
-            continue 
+            continue
         # Print model and error in order #
         print ('Model index %d -> Error = %0.5f (+/- %0.5f))'%(idx,m_err,std_err))
         if idx==idx_best_model:
-           print ('\t-> Best model from val_loss')
+            print ('\t-> Best model from val_loss')
 
-    print 
+    print
     print ('='*80,end='\n\n')
-        
+
     # Prints best model accordind to cross-validation and val_loss #
 
-    print ('Best model from val_loss -> id ',idx_best_model+1)
+    print ('Best model from val_loss -> id ',idx_best_model)
     print ('Eval error : %0.5f (+/- %0.5f))'%(scores[idx_best_model][0],scores[idx_best_model][1]))
     print (h.data.iloc[idx_best_model,:])
     print ('-'*80,end='\n\n')
 
-    print ('Best model from cross validation -> id ',idx_best_eval+1)
+    print ('Best model from cross validation -> id ',idx_best_eval)
     if idx_best_eval==idx_best_model:
         print ('Same model')
     else:
@@ -252,19 +252,19 @@ def HyperEvaluate(h,x_test,y_test,folds=5):
 #################################################################################################
 def HyperDeploy(h,name,best):
     """
-    Performs the cross-validation of the different models 
+    Performs the cross-validation of the different models
     Inputs :
         - h = Class Scan() object
-            object from class Scan coming from HyperScan 
+            object from class Scan coming from HyperScan
         - name : str
             Name of the model package to be saved on disk
         - best : int
-            index of the best model 
+            index of the best model
                 -> -1 : not used HyperEvaluate => select the one with lowest val_loss
                 -> >0 : comes from HyperEvaluate => the one with best error from cross-validation
 
-    Reference : 
-        /home/ucl/cp3/fbury/.local/lib/python3.6/site-packages/talos/commands/deploy.py 
+    Reference :
+        /home/ucl/cp3/fbury/.local/lib/python3.6/site-packages/talos/commands/deploy.py
     """
 
     no = 1
@@ -275,7 +275,8 @@ def HyperDeploy(h,name,best):
     else: # From HyperEvaluate
         idx = best
 
-    Deploy(h,model_name=name+'_'+str(no),metric='val_loss',asc=True)
+
+    Deploy(h,model_name=name+'_'+str(no),best_idx=idx,metric='val_loss',asc=True)
 
 
 #################################################################################################
@@ -283,16 +284,16 @@ def HyperDeploy(h,name,best):
 #################################################################################################
 def HyperReport(name):
     """
-    Reports the model from csv file of previous scan 
+    Reports the model from csv file of previous scan
     Plot several quantities and comparisons in dir /$name/
     Inputs :
         - name : str
-            Name of the csv file 
+            Name of the csv file
 
-    Reference : 
+    Reference :
         /home/ucl/cp3/fbury/.local/lib/python3.6/site-packages/talos/commands/reporting.py
     """
-    r = Reporting(name+'.csv')     
+    r = Reporting(name+'.csv')
 
     # returns the results dataframe
     print
@@ -300,12 +301,12 @@ def HyperReport(name):
     print ('Complete data after n_round = ',r.rounds(),':\n',r.data,end='\n\n')
 
     # Lowest val_loss #
-    print 
+    print
     print ('-'*80)
     print ('Lowest val_loss = ',r.low('val_loss'),' obtained after ',r.rounds2high('val_loss'))
 
     # Best params #
-    print 
+    print
     print ('='*80)
     print ('Best parameters sets')
     sorted_data = r.data.sort_values('val_loss',ascending=True)
@@ -315,7 +316,7 @@ def HyperReport(name):
         print (sorted_data.iloc[i])
 
     print ('='*80)
-    
+
     # Few plots #
     path = os.path.join(os.getcwd(),name+'/report')
     if not os.path.isdir(path):
@@ -363,10 +364,10 @@ def HyperRestore(inputs,scaler,path):
             path to the model archive
     Outputs
         - output : numpy array [:,6]
-            output of the given model 
+            output of the given model
 
-    Reference : 
-        /home/ucl/cp3/fbury/.local/lib/python3.6/site-packages/talos/commands/restore.py 
+    Reference :
+        /home/ucl/cp3/fbury/.local/lib/python3.6/site-packages/talos/commands/restore.py
     """
     # Restore model #
     a = Restore(path)
@@ -377,7 +378,7 @@ def HyperRestore(inputs,scaler,path):
     out_dict = {}
     for i in range(0,outputs.shape[0]):
         out_dict[(inputs[i,0],inputs[i,1])] = outputs[i,:]
-    
+
     return out_dict
 
 #################################################################################################
@@ -386,9 +387,9 @@ def HyperRestore(inputs,scaler,path):
 def HyperVerif(hist_dict,scaler,path):
     """
     Peforms the DNN interpolation for know points as a cross-check
-    Produce comparison plots 
+    Produce comparison plots
     Inputs :
-        - hist_dict : dict 
+        - hist_dict : dict
             points where rho distribution is know
                 -> key = ('mA','mH') tuple
                 -> value = np.array of six bins
@@ -398,11 +399,11 @@ def HyperVerif(hist_dict,scaler,path):
             needed to preprocess the inputs of the network
     Outputs :
         - output_dict : dict
-            Result of the interpolation for each mass point 
+            Result of the interpolation for each mass point
                 -> key = ('mA','mH') tuple
                 -> value = np.array of six bins
     """
-    # Get evaluation array input from hist #                                                     
+    # Get evaluation array input from hist #
     eval_arr = np.empty((0,2))
     for key in hist_dict.keys():
         eval_arr = np.append(eval_arr,np.asarray(key).reshape(-1,2),axis=0)
