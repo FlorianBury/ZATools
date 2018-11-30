@@ -19,8 +19,8 @@ import argparse
 
 def main():
 
-    path = "/home/ucl/cp3/asaggio/scratch/CMSSW_8_0_30/src/cp3_llbb/ZATools/scripts_ZA/ellipsesScripts/"
-    signal_path = "/home/ucl/cp3/asaggio/scratch/CMSSW_8_0_30/src/cp3_llbb/ZATools/factories_ZA/fromMaster_withSyst/slurm/output/"
+    path = "/home/ucl/cp3/fbury/scratch/CMSSW_8_0_30/src/cp3_llbb/ZATools/scripts_ZA/ellipsesScripts/"
+    signal_path = "/home/ucl/cp3/fbury/cp3_llbb/ZATools/factories_ZA/test_for_signal/slurm/output/"
     categories = ["MuMu", "ElEl"]
 
     for cat in categories:
@@ -117,6 +117,7 @@ def getMassAndWidth(massHisto, mass):
     print "highMassFit: ", highMassFit
     # perform the fit
     result_fit = massHisto.Fit("gaus","S","",lowMassFit,highMassFit)	# print the parameters
+    
     fit = massHisto.GetFunction("gaus")
     if result_fit.IsValid():
         chi2 = result_fit.Chi2()
@@ -130,12 +131,13 @@ def getMassAndWidth(massHisto, mass):
         sigma = 0
 
     # return the result
-    return (m_reco, sigma, pvalue)
+    return (m_reco, sigma, pvalue, fit)
 
 
 
 if __name__ == "__main__":
     #main(sys.argv[1:])
     main()
+
 
 
