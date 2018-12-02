@@ -175,7 +175,7 @@ def main():
     if opt.interpolate!='':
         print ('[INFO] Starting interpolation with model')
         inputs = np.asarray(eval_grid)
-        inter_DNN = HyperRestore(inputs,scaler,opt.interpolate+'.zip')
+        inter_DNN = HyperRestore(inputs,scaler,opt.interpolate+'.zip',fft=True)
         print ('... Done')
 
     # Comparison between different techniques #

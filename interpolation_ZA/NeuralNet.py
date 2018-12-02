@@ -7,6 +7,7 @@ import json
 
 import array
 import numpy as np
+import itertools
 
 
 import keras
@@ -289,7 +290,7 @@ def HyperReport(name):
     Inputs :
         - name : str
             Name of the csv file
-
+      
     Reference :
         /home/ucl/cp3/fbury/.local/lib/python3.6/site-packages/talos/commands/reporting.py
     """
@@ -353,7 +354,7 @@ def HyperReport(name):
 #################################################################################################
 # HyperRestore #
 #################################################################################################
-def HyperRestore(inputs,scaler,path):
+def HyperRestore(inputs,scaler,path,fft=False):
     """
     Retrieve a zip containing the best model, parameters, x and y data, ... and restores it
     Produces an output from the input numpy array
@@ -362,6 +363,9 @@ def HyperRestore(inputs,scaler,path):
             Inputs to be evaluated
         - path : str
             path to the model archive
+        - fft : bool
+            Wether or not to apply the fft to the network
+
     Outputs
         - output : numpy array [:,6]
             output of the given model
@@ -378,6 +382,123 @@ def HyperRestore(inputs,scaler,path):
     out_dict = {}
     for i in range(0,outputs.shape[0]):
         out_dict[(inputs[i,0],inputs[i,1])] = outputs[i,:]
+
+    if fft:
+        # Build grid #
+        n = 100 # number of bins in both directions
+        mlljj = np.linspace(0,1000,n)
+        mjj = np.linspace(0,1000,n)
+        grid = np.asarray(list(itertools.product(mjj,mlljj,repeat=1))).astype(float)
+        X,Y = np.meshgrid(mjj,mlljj)
+        # Rescale and DNN output #
+        inputs_grid = scaler.transform(np.c_[np.c_[X.ravel(),Y.ravel()]])
+        out_grid = a.model.predict(inputs_grid)
+        # FFT in 2D #
+        # Plot the different bins outputs #
+        fig = plt.figure(figsize=(15,8))
+        ax1=plt.subplot(231)
+        ax2=plt.subplot(232)
+        ax3=plt.subplot(233)
+        ax4=plt.subplot(234)
+        ax5=plt.subplot(235)
+        ax6=plt.subplot(236)
+
+        Z1 = out_grid[:,0].reshape(n,n)
+        Z2 = out_grid[:,1].reshape(n,n)
+        Z3 = out_grid[:,2].reshape(n,n)
+        Z4 = out_grid[:,3].reshape(n,n)
+        Z5 = out_grid[:,4].reshape(n,n)
+        Z6 = out_grid[:,5].reshape(n,n)
+
+        im = ax1.hexbin(X.ravel(),Y.ravel(),Z1.ravel(),gridsize=30)
+        ax1.plot([0, 1000], [0, 1000], ls="--", c=".3")
+        ax1.set_xlabel('$m_{jj}$')
+        ax1.set_ylabel('$m_{lljj}$')
+        ax1.set_title('Bin 1')
+
+        im = ax2.hexbin(X.ravel(),Y.ravel(),Z2.ravel(),gridsize=30)
+        ax2.plot([0, 1000], [0, 1000], ls="--", c=".3")
+        ax2.set_xlabel('$m_{jj}$')
+        ax2.set_ylabel('$m_{lljj}$')
+        ax2.set_title('Bin 2')
+
+        im = ax3.hexbin(X.ravel(),Y.ravel(),Z3.ravel(),gridsize=30)
+        ax3.plot([0, 1000], [0, 1000], ls="--", c=".3")
+        ax3.set_xlabel('$m_{jj}$')
+        ax3.set_ylabel('$m_{lljj}$')
+        ax3.set_title('Bin 3')
+
+        im = ax4.hexbin(X.ravel(),Y.ravel(),Z4.ravel(),gridsize=30)
+        ax4.plot([0, 1000], [0, 1000], ls="--", c=".3")
+        ax4.set_xlabel('$m_{jj}$')
+        ax4.set_ylabel('$m_{lljj}$')
+        ax4.set_title('Bin 4')
+
+        im = ax5.hexbin(X.ravel(),Y.ravel(),Z5.ravel(),gridsize=30)
+        ax5.plot([0, 1000], [0, 1000], ls="--", c=".3")
+        ax5.set_xlabel('$m_{jj}$')
+        ax5.set_ylabel('$m_{lljj}$')
+        ax5.set_title('Bin 5')
+
+        im = ax6.hexbin(X.ravel(),Y.ravel(),Z6.ravel(),gridsize=30)
+        ax6.plot([0, 1000], [0, 1000], ls="--", c=".3")
+        ax6.set_xlabel('$m_{jj}$')
+        ax6.set_ylabel('$m_{lljj}$')
+        ax6.set_title('Bin 6')
+
+        fig.subplots_adjust(right=0.85, wspace = 0.3, hspace=0.3, left=0.05, bottom=0.1)
+        cbar_ax = fig.add_axes([0.9, 0.15, 0.05, 0.7])
+        fig.colorbar(im, cax=cbar_ax)
+        fig.suptitle('Interpolation of the different bins with the NN', fontsize=16)
+
+        #plt.show()
+        fig.savefig(path.replace('.zip','')+'/bin_interpolation.png')
+        plt.close()
+
+        # Fourier Transform #
+        z = Z1.ravel()
+        #np.random.shuffle(z)
+        sp = np.fft.fft(z) 
+        freq = np.fft.fftfreq(z.shape[-1])
+        fig = plt.figure(figsize=(15,8))
+        plt.plot(freq, sp.real,label='real', color='b')
+        plt.plot(freq, sp.imag,label='imaginary', color='r')
+        plt.legend()
+        #plt.show()
+        plt.close()
+
+        fig = plt.figure(figsize=(15,8))
+        ax1=plt.subplot(231)
+        ax2=plt.subplot(232)
+        ax3=plt.subplot(233)
+        ax4=plt.subplot(234)
+        ax5=plt.subplot(235)
+        ax6=plt.subplot(236)
+
+        FS1 = np.fft.fftn(Z1)
+        FS2 = np.fft.fftn(Z2)
+        FS3 = np.fft.fftn(Z3)
+        FS4 = np.fft.fftn(Z4)
+        FS5 = np.fft.fftn(Z5)
+        FS6 = np.fft.fftn(Z6)
+        # abs + ** => a² + b² 
+        ims = ax1.imshow(np.log(np.abs(np.fft.fftshift(FS1))**2))
+        ims = ax2.imshow(np.log(np.abs(np.fft.fftshift(FS2))**2))
+        ims = ax3.imshow(np.log(np.abs(np.fft.fftshift(FS3))**2))
+        ims = ax4.imshow(np.log(np.abs(np.fft.fftshift(FS4))**2))
+        ims = ax5.imshow(np.log(np.abs(np.fft.fftshift(FS5))**2))
+        ims = ax6.imshow(np.log(np.abs(np.fft.fftshift(FS6))**2))
+
+        fig.subplots_adjust(right=0.85, wspace = 0.3, hspace=0.3, left=0.05, bottom=0.1)
+        cbar_ax = fig.add_axes([0.9, 0.15, 0.05, 0.7])
+        fig.colorbar(ims, cax=cbar_ax)
+        fig.suptitle('Fourier Analysis of the different bins', fontsize=16)
+        #plt.show()
+        fig.savefig(path.replace('.zip','')+'/bin_fourier.png')
+        plt.close()
+
+        
+
 
     return out_dict
 
