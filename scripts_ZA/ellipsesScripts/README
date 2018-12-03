@@ -5,3 +5,9 @@ a) computeEllipseParameters.py gives four output files (two for each lepton cate
     1) sigmas_MuMu(ElEl).json: contains, in order: mbb, mllbb, width_bb, and width_llbb, where mbb(llbb) is the mean of a 1D gaussian fit performed on the invariant mass distribution of bb(llbb) and width_bb(llbb) is the sigma (not resolution!) of the mentioned gaussian fit.
 
     2) ellipseParam_MuMu(ElEl).json: contains, in order: mbb, mllbb, a, b, theta, MA, MH, where mbb and mllbb are the recontructed masses described at point 1), a, b, and theta are the ellipses parameters coming from a 2D gaussian fit of the 2D mbb VS mllbb histograms, MA and MH are the simulated masses.
+
+b) plotDistributions.py produces a plot for each mass point of the m_lljj and m_jj distributions. It also adds the Gaussian fit from computeEllipseParameters.py
+
+c) centroidExtrapolation.py makes the extrapolation of the points in the plane mA-m_bb and mH-m_llbb by only considering the increasing values of y. 
+
+c) width Extrapolation.py makes the extrapolation of the width as a function of the centroid
