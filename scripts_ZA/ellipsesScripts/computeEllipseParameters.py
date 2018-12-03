@@ -46,8 +46,8 @@ def main():
                 histo_mbb = input.Get("jj_M_{0}_hZA_lljj_deepCSV_btagM_mll_and_met_cut".format(cat))
                 histo_mllbb = input.Get("lljj_M_{0}_hZA_lljj_deepCSV_btagM_mll_and_met_cut".format(cat))
 
-                (mllbb, width_llbb, PVal1) = getMassAndWidth(histo_mllbb, MH)
-                (mbb, width_bb, PVal2) = getMassAndWidth(histo_mbb, MA)
+                (mllbb, width_llbb, PVal1, fit1) = getMassAndWidth(histo_mllbb, MH)
+                (mbb, width_bb, PVal2, fit2) = getMassAndWidth(histo_mbb, MA)
                 print "mbb: ", mbb, " width_bb: ", width_bb, " PVal2: ", PVal2
                 print "mllbb: ", mllbb, " width_llbb: ", width_llbb, " PVal1: ", PVal1
 
