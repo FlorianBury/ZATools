@@ -475,6 +475,25 @@ def HyperRestore(inputs,scaler,path,fft=False):
         ax5=plt.subplot(235)
         ax6=plt.subplot(236)
 
+        # Tests for Z #
+        test = True
+        if test:
+            Z1 = np.random.random(size=(100,100))
+            mean = np.zeros(100)
+            cov = np.dot(Z1,Z1.transpose()) # random covariance matrix : positively defined
+            Z2 = np.random.multivariate_normal(mean=mean,cov=cov,size=100)
+            cov_id = np.identity(100)
+            Z3 = np.random.multivariate_normal(mean=mean,cov=cov_id,size=100)
+            Z4 = np.random.multivariate_normal(mean=np.random.random(size=100),cov=cov_id,size=100)
+            Z5 = np.random.standard_exponential(size=(100,100))
+            Z6 = np.random.chisquare(100,size=(100,100))
+            print (Z1.shape)
+            print (Z2.shape)
+            print (Z3.shape)
+            print (Z4.shape)
+            print (Z5.shape)
+            print (Z6.shape)
+
         FS1 = np.fft.fftn(Z1)
         FS2 = np.fft.fftn(Z2)
         FS3 = np.fft.fftn(Z3)
@@ -491,10 +510,21 @@ def HyperRestore(inputs,scaler,path,fft=False):
 
         fig.subplots_adjust(right=0.85, wspace = 0.3, hspace=0.3, left=0.05, bottom=0.1)
         cbar_ax = fig.add_axes([0.9, 0.15, 0.05, 0.7])
-        fig.colorbar(ims, cax=cbar_ax)
-        fig.suptitle('Fourier Analysis of the different bins', fontsize=16)
+        cbar = fig.colorbar(ims, cax=cbar_ax)
+        cbar.set_label('$log(a²+b²)$',rotation=90)
         #plt.show()
-        fig.savefig(path.replace('.zip','')+'/bin_fourier.png')
+        if not test:
+            fig.suptitle('Fourier Analysis of the different bins', fontsize=16)
+            fig.savefig(path.replace('.zip','')+'/bin_fourier.png')
+        else:
+            fig.suptitle('Fourier tests', fontsize=16)
+            ax1.set_title('random')
+            ax2.set_title('multivariate normal (mean = 0, random cov)')
+            ax3.set_title('multivariate normal (mean = 0, identity cov)')
+            ax4.set_title('multivariate normal (mean = random, identity cov)')
+            ax5.set_title('standard exponential')
+            ax6.set_title('Chi-square (ndf=100)')
+            fig.savefig(path.replace('.zip','')+'/fourier_test.png')
         plt.close()
 
         
