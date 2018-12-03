@@ -13,7 +13,6 @@ import matplotlib.pyplot as plt
 #           mllbb, mbb  = RECONSTRUCTED MASSES
 
 def main():
-
     path_ElEl = "/home/ucl/cp3/fbury/scratch/CMSSW_8_0_30/src/cp3_llbb/ZATools/scripts_ZA/ellipsesScripts/ellipseParam_ElEl.json"
     path_MuMu = "/home/ucl/cp3/fbury/scratch/CMSSW_8_0_30/src/cp3_llbb/ZATools/scripts_ZA/ellipsesScripts/ellipseParam_MuMu.json"
 
@@ -56,12 +55,12 @@ def main():
     m_A_bb_ElEl_ex = []
     m_H_llbb_MuMu_ex = []
     m_A_bb_MuMu_ex = []
-    n_poly = 3
+    n_poly = 5
     for i in range(1,n_poly+1):
-        m_H_llbb_ElEl_ex.append(Extrapolation(m_H_llbb_ElEl_in,n=i))
-        m_A_bb_ElEl_ex.append(Extrapolation(m_A_bb_ElEl_in,n=i))
-        m_H_llbb_MuMu_ex.append(Extrapolation(m_H_llbb_MuMu_in,n=i))
-        m_A_bb_MuMu_ex.append(Extrapolation(m_A_bb_MuMu_in,n=i))
+        m_H_llbb_ElEl_ex.append(Extrapolation(m_H_llbb_ElEl_in,n=i,xmax=1100))
+        m_A_bb_ElEl_ex.append(Extrapolation(m_A_bb_ElEl_in,n=i,xmax=1000))
+        m_H_llbb_MuMu_ex.append(Extrapolation(m_H_llbb_MuMu_in,n=i,xmax=1100))
+        m_A_bb_MuMu_ex.append(Extrapolation(m_A_bb_MuMu_in,n=i,xmax=1000))
 
     # m_bb plot #
     fig = plt.figure(figsize=(16,7))
@@ -147,11 +146,14 @@ def IncreasingPart(arr):
             outside = np.append(outside,arr_sorted[i,:].reshape(1,2),axis=0)
     return inside,outside
 
-def Extrapolation(data,n):
+def Extrapolation(data,n,xmax):
     # data = [x,y]
-    coeff = np.polyfit (data[:,0],data[:,1],n)
-    coeff [-1] = 0
-    x_new = np.arange(0,1200,1).reshape(1200,1)
+    data_new = np.append(data,np.array([0,0]).reshape((1,2)),axis=0) # added the point (0,0)    
+    weight = np.ones(data_new.shape[0])
+    weight[-1] = 1000000 # give a very weight to point (0,0)
+
+    coeff = np.polyfit (data_new[:,0],data_new[:,1],n,w=weight)
+    x_new = np.arange(0,xmax).reshape(xmax,1)
     p = np.poly1d(coeff)
     y_new = p(x_new)
     out = np.concatenate((x_new,y_new),axis=1)
