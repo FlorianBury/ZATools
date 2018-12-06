@@ -388,7 +388,6 @@ def HyperRestore(inputs,scaler,path,fft=False):
         n = 100 # number of bins in both directions
         mlljj = np.linspace(0,1000,n)
         mjj = np.linspace(0,1000,n)
-        grid = np.asarray(list(itertools.product(mjj,mlljj,repeat=1))).astype(float)
         X,Y = np.meshgrid(mjj,mlljj)
         # Rescale and DNN output #
         inputs_grid = scaler.transform(np.c_[np.c_[X.ravel(),Y.ravel()]])
@@ -485,8 +484,11 @@ def HyperRestore(inputs,scaler,path,fft=False):
             cov_id = np.identity(100)
             Z3 = np.random.multivariate_normal(mean=mean,cov=cov_id,size=100)
             Z4 = np.random.multivariate_normal(mean=np.random.random(size=100),cov=cov_id,size=100)
-            Z5 = np.random.standard_exponential(size=(100,100))
-            Z6 = np.random.chisquare(100,size=(100,100))
+            X,Y = np.meshgrid(np.linspace(0,3.14,100),np.linspace(0,3.14,100))
+            Z5 = np.cos(X+Y)+np.sin(Y+X)
+            Z6 = np.cos(X+Y)+np.sin(Y+X)
+            for i in range(0,50):
+                Z6 += np.cos(3.14/6*i*(X+Y))+np.sin(3.14/6*i*(X+Y))
             print (Z1.shape)
             print (Z2.shape)
             print (Z3.shape)
@@ -522,8 +524,8 @@ def HyperRestore(inputs,scaler,path,fft=False):
             ax2.set_title('multivariate normal (mean = 0, random cov)')
             ax3.set_title('multivariate normal (mean = 0, identity cov)')
             ax4.set_title('multivariate normal (mean = random, identity cov)')
-            ax5.set_title('standard exponential')
-            ax6.set_title('Chi-square (ndf=100)')
+            ax5.set_title('cos(X)+sin(X)')
+            ax6.set_title('cos(X)+sin(X) + $\sum_{i=0}^{i<50} cos(\pi/6 * i * X) + sin(\pi/6 * i * X)$')
             fig.savefig(path.replace('.zip','')+'/fourier_test.png')
         plt.close()
 
