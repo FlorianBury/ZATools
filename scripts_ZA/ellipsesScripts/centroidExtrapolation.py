@@ -7,6 +7,18 @@ import itertools
 
 import matplotlib.pyplot as plt
 
+SMALL_SIZE = 16
+MEDIUM_SIZE = 20
+BIGGER_SIZE = 24
+
+plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
+plt.rc('axes', titlesize=SMALL_SIZE)     # fontsize of the axes title
+plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
+plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
+plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
+
 #Compute ellipse parameters for primary map for signal files.
 
 #NOTA BENE: MH,MA       = SIMULATED MASSES
@@ -78,7 +90,7 @@ def main():
     ax1.set_xlim((0,1000))
     ax1.set_xlabel('$M_{A}$')
     ax1.set_ylabel('Centroid $M_{bb}$')
-    ax1.set_title('ElEl')
+    ax1.set_title('Z $\\rightarrow$ $e^+$$e^-$',fontsize=26)
 
     ax2.scatter(m_A_bb_MuMu_in[:,0],m_A_bb_MuMu_in[:,1],alpha=1,marker='1',s=150,color='g',label='Points kept')
     ax2.scatter(m_A_bb_MuMu_out[:,0],m_A_bb_MuMu_out[:,1],alpha=0.5,marker='2',s=150,color='r',label='Points removed')
@@ -91,7 +103,7 @@ def main():
     ax2.set_xlim((0,1000))
     ax2.set_xlabel('$M_{A}$')
     ax2.set_ylabel('Centroid $M_{bb}$')
-    ax2.set_title('MuMu')
+    ax2.set_title('Z $\\rightarrow$ $\\mu^+$$\\mu^-$',fontsize=26)
 
     plt.savefig('m_bb.png')
 
@@ -111,7 +123,7 @@ def main():
     ax1.set_xlim((0,1100))
     ax1.set_xlabel('$M_{H}$')
     ax1.set_ylabel('Centroid $M_{llbb}$')
-    ax1.set_title('ElEl')
+    ax1.set_title('Z $\\rightarrow$ $e^+$$e^-$',fontsize=26)
 
     ax2.scatter(m_H_llbb_MuMu_in[:,0],m_H_llbb_MuMu_in[:,1],alpha=1,marker='1',s=150,color='g',label='Points kept')
     ax2.scatter(m_H_llbb_MuMu_out[:,0],m_H_llbb_MuMu_out[:,1],alpha=0.5,marker='2',s=150,color='r',label='Points removed')
@@ -124,7 +136,7 @@ def main():
     ax2.set_xlim((0,1100))
     ax2.set_xlabel('$M_{H}$')
     ax2.set_ylabel('Centroid $M_{llbb}$')
-    ax2.set_title('MuMu')
+    ax2.set_title('Z $\\rightarrow$ $\\mu^+$$\\mu^-$',fontsize=26)
 
     plt.savefig('m_llbb.png')
 

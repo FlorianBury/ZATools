@@ -7,6 +7,18 @@ import itertools
 
 import matplotlib.pyplot as plt
 
+SMALL_SIZE = 16
+MEDIUM_SIZE = 20
+BIGGER_SIZE = 24
+
+plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
+plt.rc('axes', titlesize=SMALL_SIZE)     # fontsize of the axes title
+plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
+plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
+plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
+
 from centroidExtrapolation import *
 
 #Compute ellipse parameters for primary map for signal files.
@@ -80,7 +92,7 @@ def main():
     ax1.set_xlim((0,600))
     ax1.set_xlabel('$M_{bb}$')
     ax1.set_ylabel('Width $w_{bb}$')
-    ax1.set_title('ElEl')
+    ax1.set_title('Z $\\rightarrow$ $e^+$$e^-$',fontsize=26)
 
     ax2.scatter(w_bb_MuMu[:,0],w_bb_MuMu[:,1],alpha=1,marker='2',s=150,color='k',label='Known points')
     color=iter(plt.cm.jet(np.linspace(0.3,1,n_poly)))
@@ -91,7 +103,7 @@ def main():
     ax2.set_xlim((0,600))
     ax2.set_xlabel('$M_{bb}$')
     ax2.set_ylabel('Width $w_{bb}$')
-    ax2.set_title('MuMu')
+    ax2.set_title('Z $\\rightarrow$ $\\mu^+$$\\mu^-$',fontsize=26)
 
     plt.savefig('w_bb.png')
 
@@ -109,7 +121,7 @@ def main():
     ax1.set_ylim((0,250))
     ax1.set_xlabel('$M_{llbb}$')
     ax1.set_ylabel('Width $w_{llbb}$')
-    ax1.set_title('ElEl')
+    ax1.set_title('Z $\\rightarrow$ $e^+$$e^-$',fontsize=26)
 
     ax2.scatter(w_llbb_MuMu[:,0],w_llbb_MuMu[:,1],alpha=1,marker='1',s=150,color='k',label='Known points')
     color=iter(plt.cm.jet(np.linspace(0.3,1,n_poly)))
@@ -120,7 +132,7 @@ def main():
     ax2.set_ylim((0,250))
     ax2.set_xlabel('$M_{llbb}$')
     ax2.set_ylabel('Width $w_{llbb}$')
-    ax2.set_title('MuMu')
+    ax2.set_title('Z $\\rightarrow$ $\\mu^+$$\\mu^-$',fontsize=26)
 
     plt.savefig('w_llbb.png')
 
