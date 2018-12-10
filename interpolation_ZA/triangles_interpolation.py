@@ -161,8 +161,8 @@ def PlotGraph(graph,eval_list,name):
 
     # Generates TH2F #
     c1 = TCanvas( 'c1', 'MassPlane', 200, 10, 1200, 700 ) 
-    graph_TH2 = TH2F('Interpolated graph','Contour Plot;M_{A} [GeV];M_{H} [GeV]',100,0,1000,100,0,1000)
-    graph_points = TH2F('','',100,0,1000,100,0,1000)
+    graph_TH2 = TH2F('Interpolated graph','Contour Plot;M_{A} [GeV];M_{H} [GeV]',100,0,1005,100,0,1005)
+    graph_points = TH2F('','',100,0,1005,100,0,1005)
 
     # Interpolate and fill graph #
     max_z = 0
@@ -183,7 +183,7 @@ def PlotGraph(graph,eval_list,name):
     graph_points.Draw('p same')
     graph_points.SetMarkerStyle(5);
     graph_TH2.SetTitle('Contour plot : '+name+';M_{bb} [GeV];M_{llbb} [GeV]')
-    graph_TH2.GetZaxis().SetTitle('DNN Output')
+    graph_TH2.GetZaxis().SetTitle('Delaunay triangle interpolation')
     graph_TH2.GetZaxis().SetRangeUser(0,max_z)
     gPad.SetRightMargin(0.15)
     gPad.SetLeftMargin(0.15)

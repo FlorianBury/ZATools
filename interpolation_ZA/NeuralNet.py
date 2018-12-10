@@ -468,14 +468,20 @@ def HyperRestore(inputs,scaler,path,fft=False):
 
         fig = plt.figure(figsize=(15,8))
         ax1=plt.subplot(231)
+        ax1.set_title('Bin 1')
         ax2=plt.subplot(232)
+        ax2.set_title('Bin 2')
         ax3=plt.subplot(233)
+        ax3.set_title('Bin 3')
         ax4=plt.subplot(234)
+        ax4.set_title('Bin 4')
         ax5=plt.subplot(235)
+        ax5.set_title('Bin 5')
         ax6=plt.subplot(236)
+        ax6.set_title('Bin 6')
 
         # Tests for Z #
-        test = True
+        test = False
         if test:
             Z1 = np.random.random(size=(100,100))
             mean = np.zeros(100)
