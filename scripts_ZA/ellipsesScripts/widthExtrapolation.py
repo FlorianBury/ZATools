@@ -21,7 +21,7 @@ plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 
 from centroidExtrapolation import *
 
-#Compute ellipse parameters for primary map for signal files.
+# Extrapolate the widths as a function of the centroids
 
 #NOTA BENE: MH,MA       = SIMULATED MASSES
 #           mllbb, mbb  = RECONSTRUCTED MASSES

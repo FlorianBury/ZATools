@@ -19,7 +19,7 @@ plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
 plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
 plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 
-#Compute ellipse parameters for primary map for signal files.
+# Interpolation of the centroids 
 
 #NOTA BENE: MH,MA       = SIMULATED MASSES
 #           mllbb, mbb  = RECONSTRUCTED MASSES
@@ -143,7 +143,17 @@ def main():
     
   
 def IncreasingPart(arr):
-    """ Only returns the part of the distribution that is strictly increasing """
+    """
+    Separates the increasing part of arr to be used for the extrapolation, and the rest of the points
+    Inputs :
+        - arr : numpy array [N,2]
+            Contains the values of x and y 
+    Outputs :
+        - inside :  numpy array [N,2]
+            Points to be used for extrapolation
+        - outside :  numpy array [N,2]
+            Points not to be used for extrapolation
+    """
     # Sort according to x #
     arr_sorted = arr[np.lexsort((-arr[:,1],arr[:,0]))] # ascending in x, descendin in y
 
@@ -159,6 +169,19 @@ def IncreasingPart(arr):
     return inside,outside
 
 def Extrapolation(data,n,xmax):
+    """
+    Extrapolate the data with a n order polyfit
+    Inputs :
+        - data : numpy array [N,2]
+            Contains the values of x and y 
+        - n : int
+            Order of the polynom
+        - xmax : float
+            maximum value of x to be used for extrapolation
+    Outputs :
+        - out :  numpy array [N,2]
+            extrapolation of x (from 0 to xmax) = y
+    """
     # data = [x,y]
     data_new = np.append(data,np.array([0,0]).reshape((1,2)),axis=0) # added the point (0,0)    
     weight = np.ones(data_new.shape[0])
