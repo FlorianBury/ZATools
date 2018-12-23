@@ -123,7 +123,12 @@ def getMassAndWidth(massHisto, mass, cat='', use_fit=False):
     maximum    = massHisto.GetMaximum()
     print "maximum: ", maximum
     if use_fit:
-        coeff = np.loadtxt('pol2_fit_'+cat+'.txt')
+        try:
+            coeff = np.loadtxt('pol2_fit_'+cat+'.txt')
+        except:
+            print ('[ERROR] No coeff file '+'pol2_fit_'+cat+'.txt found for the pol2 fit')
+            print ('Maybe you should use centroidExtrapolation.py first')
+            sys.exit()
         p = np.poly1d(coeff)
         massPeak = p(mass)
         maximumBin = massHisto.FindBin(massPeak)

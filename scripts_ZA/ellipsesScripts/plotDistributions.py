@@ -3,6 +3,7 @@
 import sys, os, json
 import copy
 import numpy as np
+import argparse
 
 import ROOT
 
@@ -95,10 +96,10 @@ def main():
 
             # Recover the Fit #
 
-            fit_MuMu_jj = getMassAndWidth(hist_MuMu_m_jj,MA,use_fit=use_fit)
-            fit_MuMu_lljj = getMassAndWidth(hist_MuMu_m_lljj,MH,use_fit=use_fit)
-            fit_ElEl_jj = getMassAndWidth(hist_ElEl_m_jj,MA,use_fit=use_fit)
-            fit_ElEl_lljj = getMassAndWidth(hist_ElEl_m_lljj,MH,use_fit=use_fit)
+            fit_MuMu_jj = getMassAndWidth(hist_MuMu_m_jj,MA,cat='mA_MuMu',use_fit=use_centroid_fit)
+            fit_MuMu_lljj = getMassAndWidth(hist_MuMu_m_lljj,MH,cat='mH_MuMu',use_fit=use_centroid_fit)
+            fit_ElEl_jj = getMassAndWidth(hist_ElEl_m_jj,MA,cat='mA_ElEl',use_fit=use_centroid_fit)
+            fit_ElEl_lljj = getMassAndWidth(hist_ElEl_m_lljj,MH,cat='mH_ElEl',use_fit=use_centroid_fit)
             # fit contains (m_reco, sigma, pvalue, fit_hist) 
 
             fit_MuMu_jj[3].SetLineColor(ROOT.kGreen+2)
