@@ -27,8 +27,8 @@ from centroidExtrapolation import *
 #           mllbb, mbb  = RECONSTRUCTED MASSES
 
 def main():
-    path_ElEl = "/home/ucl/cp3/fbury/scratch/CMSSW_8_0_30/src/cp3_llbb/ZATools/scripts_ZA/ellipsesScripts/sigmas_ElEl.json"
-    path_MuMu = "/home/ucl/cp3/fbury/scratch/CMSSW_8_0_30/src/cp3_llbb/ZATools/scripts_ZA/ellipsesScripts/sigmas_MuMu.json"
+    path_ElEl = "/home/ucl/cp3/fbury/scratch/CMSSW_8_0_30/src/cp3_llbb/ZATools/scripts_ZA/ellipsesScripts/sigmasFit_ElEl.json"
+    path_MuMu = "/home/ucl/cp3/fbury/scratch/CMSSW_8_0_30/src/cp3_llbb/ZATools/scripts_ZA/ellipsesScripts/sigmasFit_MuMu.json"
 
     with open(path_ElEl,'r') as f:
         ElEl = json.load(f)
@@ -86,7 +86,7 @@ def main():
     ax1.scatter(w_bb_ElEl[:,0],w_bb_ElEl[:,1],alpha=1,marker='2',s=150,color='k',label='Known points')
     color=iter(plt.cm.jet(np.linspace(0.3,1,n_poly)))
     for i in range(0,n_poly):
-        ax1.plot(w_bb_ElEl_ex[i][:,0],w_bb_ElEl_ex[i][:,1],color=color.next(),label='Extrapolation order '+str(i+1))
+        ax1.plot(w_bb_ElEl_ex[i][:,0],w_bb_ElEl_ex[i][:,1],color=next(color),label='Extrapolation order '+str(i+1))
     ax1.legend(loc='upper left')
     ax1.set_ylim((0,130))
     ax1.set_xlim((0,600))
@@ -97,7 +97,7 @@ def main():
     ax2.scatter(w_bb_MuMu[:,0],w_bb_MuMu[:,1],alpha=1,marker='2',s=150,color='k',label='Known points')
     color=iter(plt.cm.jet(np.linspace(0.3,1,n_poly)))
     for i in range(0,n_poly):
-        ax2.plot(w_bb_MuMu_ex[i][:,0],w_bb_MuMu_ex[i][:,1],color=color.next(),label='Extrapolation order '+str(i+1))
+        ax2.plot(w_bb_MuMu_ex[i][:,0],w_bb_MuMu_ex[i][:,1],color=next(color),label='Extrapolation order '+str(i+1))
     ax2.legend(loc='upper left')
     ax2.set_ylim((0,130))
     ax2.set_xlim((0,600))
@@ -115,7 +115,7 @@ def main():
     ax1.scatter(w_llbb_ElEl[:,0],w_llbb_ElEl[:,1],alpha=1,marker='1',s=150,color='k',label='Known points')
     color=iter(plt.cm.jet(np.linspace(0.3,1,n_poly)))
     for i in range(0,n_poly):
-        ax1.plot(w_llbb_ElEl_ex[i][:,0],w_llbb_ElEl_ex[i][:,1],color=color.next(),label='Extrapolation order '+str(i+1))
+        ax1.plot(w_llbb_ElEl_ex[i][:,0],w_llbb_ElEl_ex[i][:,1],color=next(color),label='Extrapolation order '+str(i+1))
     ax1.legend(loc='upper left')
     ax1.set_xlim((0,900))
     ax1.set_ylim((0,250))
@@ -126,7 +126,7 @@ def main():
     ax2.scatter(w_llbb_MuMu[:,0],w_llbb_MuMu[:,1],alpha=1,marker='1',s=150,color='k',label='Known points')
     color=iter(plt.cm.jet(np.linspace(0.3,1,n_poly)))
     for i in range(0,n_poly):
-        ax2.plot(w_llbb_MuMu_ex[i][:,0],w_llbb_MuMu_ex[i][:,1],color=color.next(),label='Extrapolation order '+str(i+1))
+        ax2.plot(w_llbb_MuMu_ex[i][:,0],w_llbb_MuMu_ex[i][:,1],color=next(color),label='Extrapolation order '+str(i+1))
     ax2.legend(loc='upper left')
     ax2.set_xlim((0,900))
     ax2.set_ylim((0,250))

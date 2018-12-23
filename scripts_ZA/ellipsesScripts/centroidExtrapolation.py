@@ -30,7 +30,6 @@ def main():
     path_ElEl = "/home/ucl/cp3/fbury/scratch/CMSSW_8_0_30/src/cp3_llbb/ZATools/scripts_ZA/ellipsesScripts/ellipseParam_ElEl.json"
     path_MuMu = "/home/ucl/cp3/fbury/scratch/CMSSW_8_0_30/src/cp3_llbb/ZATools/scripts_ZA/ellipsesScripts/ellipseParam_MuMu.json"
 
-    global save_pol 
     save_pol = True
 
     with open(path_ElEl,'r') as f:
@@ -136,10 +135,10 @@ def main():
     m_A_bb_MuMu_ex = []
     n_poly = 5
     for i in range(1,n_poly+1):
-        m_H_llbb_ElEl_ex.append(Extrapolation(m_H_llbb_ElEl_in,n=i,xmax=1100,label='_mH_ElEl'))
-        m_A_bb_ElEl_ex.append(Extrapolation(m_A_bb_ElEl_in,n=i,xmax=1000,label='_mA_ElEl'))
-        m_H_llbb_MuMu_ex.append(Extrapolation(m_H_llbb_MuMu_in,n=i,xmax=1100,label='_mH_MuMu'))
-        m_A_bb_MuMu_ex.append(Extrapolation(m_A_bb_MuMu_in,n=i,xmax=1000,label='_mA_MuMu'))
+        m_H_llbb_ElEl_ex.append(Extrapolation(m_H_llbb_ElEl_in,n=i,xmax=1100,label='_mH_ElEl',save_pol=True))
+        m_A_bb_ElEl_ex.append(Extrapolation(m_A_bb_ElEl_in,n=i,xmax=1000,label='_mA_ElEl',save_pol=True))
+        m_H_llbb_MuMu_ex.append(Extrapolation(m_H_llbb_MuMu_in,n=i,xmax=1100,label='_mH_MuMu',save_pol=True))
+        m_A_bb_MuMu_ex.append(Extrapolation(m_A_bb_MuMu_in,n=i,xmax=1000,label='_mA_MuMu',save_pol=True))
 
     # m_bb plot #
     fig = plt.figure(figsize=(16,7))
@@ -369,7 +368,7 @@ def RemovePoints(arr,increment=1):
 ################################################################################################
 
 
-def Extrapolation(data,n,xmax,label):
+def Extrapolation(data,n,xmax,save_pol=False,label=''):
     """
     Extrapolate the data with a n order polyfit
     Inputs :
@@ -379,6 +378,8 @@ def Extrapolation(data,n,xmax,label):
             Order of the polynom
         - xmax : float
             maximum value of x to be used for extrapolation
+        - label = str
+            name to save the pol2 txt file
     Outputs :
         - out :  numpy array [N,2]
             extrapolation of x (from 0 to xmax) = y
@@ -389,7 +390,6 @@ def Extrapolation(data,n,xmax,label):
     weight[-1] = 1000000 # give a very high weight to point (0,0)
 
     coeff = np.polyfit (data_new[:,0],data_new[:,1],n,w=weight)
-    coeff[-1] = 0
     x_new = np.arange(0,xmax).reshape(xmax,1)
     p = np.poly1d(coeff)
     y_new = p(x_new)
