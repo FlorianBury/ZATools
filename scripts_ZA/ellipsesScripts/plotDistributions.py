@@ -12,19 +12,29 @@ from computeEllipseParameters import getMassAndWidth
 
 def main():
 
+    parser = argparse.ArgumentParser(description='Plot the distribution and gaussian fit (with or without centroid fit)')
+    parser.add_argument('-fit','--fit', action='store_true', required=False, default=False,
+                    help='If option used, the script will try to find the pol2 fit coefficients and use them to fix the centroid in the fit')
+    opt = parser.parse_args()
+    use_centroid_fit = opt.fit
+
     path = "/home/ucl/cp3/fbury/cp3_llbb/ZATools/factories_ZA/test_for_signal/slurm/output/"
 
     ROOT.gROOT.SetBatch(True)
     ROOT.gStyle.SetOptStat(0)
     
     first_plot = True
+    if not use_centroid_fit:
+        name = 'dist.pdf'
+    else:
+        name = 'dist_centroid_fit.pdf'
 
     for inputfile in os.listdir(path):
         if inputfile.startswith("HToZA") and inputfile.endswith(".root"):
             c1 = ROOT.TCanvas( 'c1', 'dist', 200, 10, 1200, 700 )
 
             if first_plot: # Starts the canvas pdf for the first plot
-                c1.Print('dist.pdf[')
+                c1.Print(name+'[')
                 first_plot = False
 
             #Get the simulated masses: MA and MH
@@ -85,10 +95,10 @@ def main():
 
             # Recover the Fit #
 
-            fit_MuMu_jj = getMassAndWidth(hist_MuMu_m_jj,MA)
-            fit_MuMu_lljj = getMassAndWidth(hist_MuMu_m_lljj,MH)
-            fit_ElEl_jj = getMassAndWidth(hist_ElEl_m_jj,MA)
-            fit_ElEl_lljj = getMassAndWidth(hist_ElEl_m_lljj,MH)
+            fit_MuMu_jj = getMassAndWidth(hist_MuMu_m_jj,MA,use_fit=use_fit)
+            fit_MuMu_lljj = getMassAndWidth(hist_MuMu_m_lljj,MH,use_fit=use_fit)
+            fit_ElEl_jj = getMassAndWidth(hist_ElEl_m_jj,MA,use_fit=use_fit)
+            fit_ElEl_lljj = getMassAndWidth(hist_ElEl_m_lljj,MH,use_fit=use_fit)
             # fit contains (m_reco, sigma, pvalue, fit_hist) 
 
             fit_MuMu_jj[3].SetLineColor(ROOT.kGreen+2)
@@ -133,12 +143,12 @@ def main():
 
             c1.Update()
             #raw_input('Press key')
-            c1.Print('dist.pdf')
+            c1.Print(name)
                 
             c1.Clear()
             #c1.Close()
             
-    c1.Print('dist.pdf]')
+    c1.Print(name+']')
         
     
 if __name__ == "__main__":
