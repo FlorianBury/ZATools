@@ -136,22 +136,14 @@ def getMassAndWidth(massHisto, mass, cat='', use_fit=False):
         print "maximumBin according to fit: ", maximumBin
         print "massPeak according to fit: ", massPeak
         print "maximum according to fit: ", maximum
-    halfWidth  = 0.30*mass
+    halfWidth  = int(0.30*mass)
     print "halfWidth: ", halfWidth
 
-    #if maximumBin-halfWidth > 0:
-    #    lowMassFit = massHisto.GetBinLowEdge(maximumBin-halfWidth)
-    #else:
-    #    lowMassFit = massHisto.GetBinLowEdge(0)
-    #if maximumBin+halfWidth < massHisto.GetNbinsX():
-    #    highMassFit = massHisto.GetBinLowEdge(maximumBin+halfWidth)
-    #else:
-    #    highMassFit = massHisto.GetBinLowEdge(massHisto.GetNbinsX())
     lowMassFit = max(massPeak-halfWidth,0) 
     highMassFit = min(massPeak+halfWidth,massHisto.GetBinLowEdge(massHisto.GetSize()-2))
 
-    print "lowMassFit: ", lowMassFit
-    print "highMassFit: ", highMassFit
+    print ("lowMassFit : %0.2f"%(lowMassFit))
+    print ("highMassFit : %0.2f"%(highMassFit))
     # perform the fit
     fit_gauss = ROOT.TF1('fit','gaus',lowMassFit,highMassFit)
     fit_gauss.SetParameters(maximum,massPeak,halfWidth)
