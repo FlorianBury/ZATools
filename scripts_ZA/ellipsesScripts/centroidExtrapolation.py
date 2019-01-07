@@ -2,8 +2,8 @@
 
 import sys, os, json
 import copy
-import numpy as np
 import itertools
+import numpy as np
 
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -21,7 +21,7 @@ plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
 plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
 plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 
-# Interpolation of the centroids 
+# Interpolation of the centroids
 
 #NOTA BENE: MH,MA       = SIMULATED MASSES
 #           mllbb, mbb  = RECONSTRUCTED MASSES
@@ -29,8 +29,6 @@ plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 def main():
     path_ElEl = "/home/ucl/cp3/fbury/scratch/CMSSW_8_0_30/src/cp3_llbb/ZATools/scripts_ZA/ellipsesScripts/ellipseParam_ElEl.json"
     path_MuMu = "/home/ucl/cp3/fbury/scratch/CMSSW_8_0_30/src/cp3_llbb/ZATools/scripts_ZA/ellipsesScripts/ellipseParam_MuMu.json"
-
-    save_pol = True
 
     with open(path_ElEl,'r') as f:
         ElEl = json.load(f)
@@ -53,7 +51,6 @@ def main():
     major_MuMu = np.zeros((0,3)) # [mA,mH,a]
     minor_MuMu = np.zeros((0,3)) # [mA,mH,b]
     theta_MuMu = np.zeros((0,3)) # [mA,mH,theta]
-
 
 
     for m in ElEl:
@@ -300,7 +297,7 @@ def main():
 ################################################################################################
 # IncreasingPart #
 ################################################################################################
-  
+
 def IncreasingPart(arr):
     """
     Separates the increasing part of arr to be used for the extrapolation, and the rest of the points
