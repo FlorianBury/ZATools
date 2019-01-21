@@ -11,8 +11,8 @@ def get_scram_tool_info(tool, tag):
 
 def default_code_before_loop():
     return r"""
-    massWindow window_MuMu("/home/ucl/cp3/asaggio/scratch/CMSSW_8_0_30/src/cp3_llbb/ZATools/scripts_ZA/ellipsesScripts/ellipseParam_MuMu.json");
-    massWindow window_ElEl("/home/ucl/cp3/asaggio/scratch/CMSSW_8_0_30/src/cp3_llbb/ZATools/scripts_ZA/ellipsesScripts/ellipseParam_ElEl.json");
+    massWindow window_MuMu("/home/ucl/cp3/fbury/scratch/CMSSW_8_0_30/src/cp3_llbb/ZATools/scripts_ZA/ellipsesScripts/fullEllipseParamWindowFit_MuMu.json");
+    massWindow window_ElEl("/home/ucl/cp3/fbury/scratch/CMSSW_8_0_30/src/cp3_llbb/ZATools/scripts_ZA/ellipsesScripts/fullEllipseParamWindowFit_ElEl.json");
     """
 
 def default_code_in_loop():
@@ -182,7 +182,7 @@ class BasePlotter:
         inverted_mll_and_met_cut = "({0} && {1})".format(inverted_mll_cut, inverted_met_cut)
         met_cut_and_inverted_mll_cut = "({0} && {1})".format(inverted_mll_cut, met_cut)
         mll_cut_and_inverted_met_cut = "({0} && {1})".format(mll_cut, inverted_met_cut)
-        
+
         self.dict_stage_cut = {
             "no_cut": "", 
             "mll_cut": mll_cut,
@@ -594,10 +594,10 @@ class BasePlotter:
             if self.btag:
                 #PLOTS IN ELLIPSE
                 if cat=='MuEl':  #Load the ElEl file for the MuEl category
-                    with open('/home/ucl/cp3/asaggio/scratch/CMSSW_8_0_30/src/cp3_llbb/ZATools/scripts_ZA/ellipsesScripts/ellipseParam_ElEl.json') as f:
+                    with open('/home/ucl/cp3/fbury/scratch/CMSSW_8_0_30/src/cp3_llbb/ZATools/scripts_ZA/ellipsesScripts/fullEllipseParamWindowFit_ElEl.json') as f:
                         parameters = json.load(f)
                 else:
-                    with open('/home/ucl/cp3/asaggio/scratch/CMSSW_8_0_30/src/cp3_llbb/ZATools/scripts_ZA/ellipsesScripts/ellipseParam_{0}.json'.format(cat)) as f:
+                    with open('/home/ucl/cp3/fbury/scratch/CMSSW_8_0_30/src/cp3_llbb/ZATools/scripts_ZA/ellipsesScripts/fullEllipseParamWindowFit_{0}.json'.format(cat)) as f:
                         parameters = json.load(f)
                 for j, line in enumerate(parameters):
                     if cat=='MuEl':
@@ -611,18 +611,18 @@ class BasePlotter:
                     self.ellExtraString = self.extraString + self.tempExtraString
 
                     self.inEllipse_plot.extend([
-                        #{
-                        #    'name': 'll_M_%s_%s_%s%s'%(self.llFlav, self.suffix, self.ellExtraString, self.systematicString),
-                        #    'variable': self.ll_str+".M()",
-                        #    'plot_cut': self.ellCut,
-                        #    'binning': mll_plot_binning
-                        #},
-                        #{
-                        #    'name': 'Mjj_vs_Mlljj_%s_%s_%s%s'%(self.llFlav, self.suffix, self.ellExtraString, self.systematicString),
-                        #    'variable': self.jj_str + '.M() ::: '+self.baseObject + '.p4.M()',
-                        #    'plot_cut': self.ellCut,
-                        #    'binning': '(150, 0, 1500, 150, 0, 1500)'
-                        #},
+                        {
+                            'name': 'll_M_%s_%s_%s%s'%(self.llFlav, self.suffix, self.ellExtraString, self.systematicString),
+                            'variable': self.ll_str+".M()",
+                            'plot_cut': self.ellCut,
+                            'binning': mll_plot_binning
+                        },
+                        {
+                            'name': 'Mjj_vs_Mlljj_%s_%s_%s%s'%(self.llFlav, self.suffix, self.ellExtraString, self.systematicString),
+                            'variable': self.jj_str + '.M() ::: '+self.baseObject + '.p4.M()',
+                            'plot_cut': self.ellCut,
+                            'binning': '(150, 0, 1500, 150, 0, 1500)'
+                        },
                         {
                             'name': 'jj_M_%s_%s_%s%s'%(self.llFlav, self.suffix, self.ellExtraString, self.systematicString),
                             'variable': self.jj_str + ".M()",
@@ -634,6 +634,12 @@ class BasePlotter:
                             'variable': self.baseObject+".p4.M()",
                             'plot_cut': self.ellCut,
                             'binning': '(50, 100, 1500)'
+                        },
+                        {
+                            'name': 'countsInOut_%s_%s_%s%s'%(self.llFlav, self.suffix, self.ellExtraString, self.systematicString),
+                            'variable': "window_{0}.isInEllipse({1}, {2}, {3}, {4}, {5})".format(cat, float(line[0]), float(line[1]), self.rho, self.jj_str + ".M()", self.baseObject + ".p4.M()"),
+                            'plot_cut': self.totalCut,#+"&& {0}<1.3*{1} && {0}>0.7*{1} && {2}<1.3*{3} && {2}>0.7*{3}".format(self.jj_str+".M()",float(line[0]),self.baseObject +".p4.M()",float(line[1])),
+                            'binning': '(2, 0, 2)'
                         }
                     ])
 

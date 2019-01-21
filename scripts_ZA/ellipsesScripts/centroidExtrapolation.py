@@ -5,9 +5,13 @@ import copy
 import itertools
 import numpy as np
 
+from scipy.optimize import curve_fit
+
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
+
+from plotDistributions import get_options
 
 SMALL_SIZE = 16
 MEDIUM_SIZE = 20
@@ -27,8 +31,22 @@ plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 #           mllbb, mbb  = RECONSTRUCTED MASSES
 
 def main():
-    path_ElEl = "/home/ucl/cp3/fbury/scratch/CMSSW_8_0_30/src/cp3_llbb/ZATools/scripts_ZA/ellipsesScripts/ellipseParam_ElEl.json"
-    path_MuMu = "/home/ucl/cp3/fbury/scratch/CMSSW_8_0_30/src/cp3_llbb/ZATools/scripts_ZA/ellipsesScripts/ellipseParam_MuMu.json"
+    opt = get_options()
+
+    if not opt.fit and not opt.window:
+        save_pol = True
+    else:
+        save_pol = False
+
+    path_ElEl = "/home/ucl/cp3/fbury/scratch/CMSSW_8_0_30/src/cp3_llbb/ZATools/scripts_ZA/ellipsesScripts/fullEllipseParam_ElEl.json"
+    path_MuMu = "/home/ucl/cp3/fbury/scratch/CMSSW_8_0_30/src/cp3_llbb/ZATools/scripts_ZA/ellipsesScripts/fullEllipseParam_MuMu.json"
+
+    if opt.fit:                                                                                                                                                                             
+        path_ElEl = path_ElEl.replace('ellipseParam','ellipseParamFit')                                                                                                                 
+        path_MuMu = path_MuMu.replace('ellipseParam','ellipseParamFit')                                                                                                                 
+        if opt.window:                                                                                                                                                                          
+            path_ElEl = path_ElEl.replace('ellipseParam','ellipseParamWindow')                                                                                                              
+            path_MuMu = path_MuMu.replace('ellipseParam','ellipseParamWindow')                                                                                                              
 
     with open(path_ElEl,'r') as f:
         ElEl = json.load(f)
@@ -95,12 +113,12 @@ def main():
     theta_MuMu = theta_MuMu[np.lexsort((-theta_MuMu[:,0],theta_MuMu[:,1]))]
 
     # Remove outliers #
-    inc = 1.2
 
-    m_H_llbb_ElEl_mask  = RemovePoints(m_H_llbb_ElEl,increment=inc)
-    m_A_bb_ElEl_mask  = RemovePoints(m_A_bb_ElEl,increment=inc)
-    m_H_llbb_MuMu_mask  = RemovePoints(m_H_llbb_MuMu,increment=inc)
-    m_A_bb_MuMu_mask  = RemovePoints(m_A_bb_MuMu,increment=inc)
+    m_H_llbb_ElEl_mask  = RemovePoints(m_H_llbb_ElEl)
+    m_A_bb_ElEl_mask  = RemovePoints(m_A_bb_ElEl)
+    m_H_llbb_MuMu_mask  = RemovePoints(m_H_llbb_MuMu)
+    m_A_bb_MuMu_mask  = RemovePoints(m_A_bb_MuMu)
+
 
     m_H_llbb_ElEl_in = m_H_llbb_ElEl[m_H_llbb_ElEl_mask==True]
     m_H_llbb_ElEl_out = m_H_llbb_ElEl[m_H_llbb_ElEl_mask==False]
@@ -130,12 +148,12 @@ def main():
     m_A_bb_ElEl_ex = []
     m_H_llbb_MuMu_ex = []
     m_A_bb_MuMu_ex = []
-    n_poly = 5
-    for i in range(1,n_poly+1):
-        m_H_llbb_ElEl_ex.append(Extrapolation(m_H_llbb_ElEl_in,n=i,xmax=1100,label='_mH_ElEl',save_pol=True))
-        m_A_bb_ElEl_ex.append(Extrapolation(m_A_bb_ElEl_in,n=i,xmax=1000,label='_mA_ElEl',save_pol=True))
-        m_H_llbb_MuMu_ex.append(Extrapolation(m_H_llbb_MuMu_in,n=i,xmax=1100,label='_mH_MuMu',save_pol=True))
-        m_A_bb_MuMu_ex.append(Extrapolation(m_A_bb_MuMu_in,n=i,xmax=1000,label='_mA_MuMu',save_pol=True))
+    n_poly = 3
+    for i in range(0,n_poly+1):
+        m_H_llbb_ElEl_ex.append(Extrapolation(m_H_llbb_ElEl_in,n=i,xmax=1100,label='_mH_ElEl',save_pol=save_pol))
+        m_A_bb_ElEl_ex.append(Extrapolation(m_A_bb_ElEl_in,n=i,xmax=1000,label='_mA_ElEl',save_pol=save_pol))
+        m_H_llbb_MuMu_ex.append(Extrapolation(m_H_llbb_MuMu_in,n=i,xmax=1100,label='_mH_MuMu',save_pol=save_pol))
+        m_A_bb_MuMu_ex.append(Extrapolation(m_A_bb_MuMu_in,n=i,xmax=1000,label='_mA_MuMu',save_pol=save_pol))
 
     # m_bb plot #
     fig = plt.figure(figsize=(16,7))
@@ -144,9 +162,12 @@ def main():
 
     ax1.scatter(m_A_bb_ElEl_in[:,0],m_A_bb_ElEl_in[:,1],alpha=1,marker='1',s=150,color='g',label='Points kept')
     ax1.scatter(m_A_bb_ElEl_out[:,0],m_A_bb_ElEl_out[:,1],alpha=0.5,marker='2',s=150,color='r',label='Points removed')
-    color=iter(plt.cm.jet(np.linspace(0.3,1,n_poly)))
-    for i in range(0,n_poly):
-        ax1.plot(m_A_bb_ElEl_ex[i][:,0],m_A_bb_ElEl_ex[i][:,1],color=color.next(),label='Extrapolation order '+str(i+1))
+    color=iter(plt.cm.jet(np.linspace(0.3,1,n_poly+1)))
+    for i in range(0,n_poly+1):
+        if i==0:
+            ax1.plot(m_A_bb_ElEl_ex[i][:,0],m_A_bb_ElEl_ex[i][:,1],color=color.next(),label='Custom fit')
+        else:
+            ax1.plot(m_A_bb_ElEl_ex[i][:,0],m_A_bb_ElEl_ex[i][:,1],color=color.next(),label='Extrapolation order '+str(i))
     ax1.plot([0, 1000], [0, 1000], ls="--", c=".3",label='Theory')
     ax1.legend(loc='upper left')
     ax1.set_ylim((0,1000))
@@ -157,9 +178,12 @@ def main():
 
     ax2.scatter(m_A_bb_MuMu_in[:,0],m_A_bb_MuMu_in[:,1],alpha=1,marker='1',s=150,color='g',label='Points kept')
     ax2.scatter(m_A_bb_MuMu_out[:,0],m_A_bb_MuMu_out[:,1],alpha=0.5,marker='2',s=150,color='r',label='Points removed')
-    color=iter(plt.cm.jet(np.linspace(0.3,1,n_poly)))
-    for i in range(0,n_poly):
-        ax2.plot(m_A_bb_MuMu_ex[i][:,0],m_A_bb_MuMu_ex[i][:,1],color=color.next(),label='Extrapolation order '+str(i+1))
+    color=iter(plt.cm.jet(np.linspace(0.3,1,n_poly+1)))
+    for i in range(0,n_poly+1):
+        if i==0:
+            ax2.plot(m_A_bb_MuMu_ex[i][:,0],m_A_bb_MuMu_ex[i][:,1],color=color.next(),label='Custom fit')
+        else:
+            ax2.plot(m_A_bb_MuMu_ex[i][:,0],m_A_bb_MuMu_ex[i][:,1],color=color.next(),label='Extrapolation order '+str(i))
     ax2.plot([0, 1000], [0, 1000], ls="--", c=".3",label='Theory')
     ax2.legend(loc='upper left')
     ax2.set_ylim((0,1000))
@@ -175,11 +199,14 @@ def main():
     ax1 = plt.subplot(121) # ElEl
     ax2 = plt.subplot(122) # MuMu
 
-    ax1.scatter(m_H_llbb_ElEl_in[:,0],m_H_llbb_ElEl_in[:,1],alpha=1,marker='1',s=150,color='g',label='Points kept')
+    ax1.scatter(m_H_llbb_ElEl_in[:,0],m_H_llbb_ElEl_in[:,1],alpha=0.5,marker='1',s=150,color='g',label='Points kept')
     ax1.scatter(m_H_llbb_ElEl_out[:,0],m_H_llbb_ElEl_out[:,1],alpha=0.5,marker='2',s=150,color='r',label='Points removed')
-    color=iter(plt.cm.jet(np.linspace(0.3,1,n_poly)))
-    for i in range(0,n_poly):
-        ax1.plot(m_H_llbb_ElEl_ex[i][:,0],m_H_llbb_ElEl_ex[i][:,1],color=color.next(),label='Extrapolation order '+str(i+1))
+    color=iter(plt.cm.jet(np.linspace(0.3,1,n_poly+1)))
+    for i in range(0,n_poly+1):
+        if i==0:
+            ax1.plot(m_H_llbb_ElEl_ex[i][:,0],m_H_llbb_ElEl_ex[i][:,1],color=color.next(),label='Custom fit')
+        else:
+            ax1.plot(m_H_llbb_ElEl_ex[i][:,0],m_H_llbb_ElEl_ex[i][:,1],color=color.next(),label='Extrapolation order '+str(i))
     ax1.plot([0, 1100], [0, 1100], ls="--", c=".3",label='Theory')
     ax1.legend(loc='upper left')
     ax1.set_ylim((0,1100))
@@ -188,11 +215,14 @@ def main():
     ax1.set_ylabel('Centroid $M_{llbb}$')
     ax1.set_title('Z $\\rightarrow$ $e^+$$e^-$',fontsize=26)
 
-    ax2.scatter(m_H_llbb_MuMu_in[:,0],m_H_llbb_MuMu_in[:,1],alpha=1,marker='1',s=150,color='g',label='Points kept')
+    ax2.scatter(m_H_llbb_MuMu_in[:,0],m_H_llbb_MuMu_in[:,1],alpha=0.5,marker='1',s=150,color='g',label='Points kept')
     ax2.scatter(m_H_llbb_MuMu_out[:,0],m_H_llbb_MuMu_out[:,1],alpha=0.5,marker='2',s=150,color='r',label='Points removed')
-    color=iter(plt.cm.jet(np.linspace(0.3,1,n_poly)))
-    for i in range(0,n_poly):
-        ax2.plot(m_H_llbb_MuMu_ex[i][:,0],m_H_llbb_MuMu_ex[i][:,1],color=color.next(),label='Extrapolation order '+str(i+1))
+    color=iter(plt.cm.jet(np.linspace(0.3,1,n_poly+1)))
+    for i in range(0,n_poly+1):
+        if i==0:
+            ax2.plot(m_H_llbb_MuMu_ex[i][:,0],m_H_llbb_MuMu_ex[i][:,1],color=color.next(),label='Custom fit')
+        else:
+            ax2.plot(m_H_llbb_MuMu_ex[i][:,0],m_H_llbb_MuMu_ex[i][:,1],color=color.next(),label='Extrapolation order '+str(i))
     ax2.plot([0, 1100], [0, 1100], ls="--", c=".3",label='Theory')
     ax2.legend(loc='upper left')
     ax2.set_ylim((0,1100))
@@ -295,70 +325,40 @@ def main():
     plt.savefig('theta_tilt.png')
 
 ################################################################################################
-# IncreasingPart # -> Deprecated
-################################################################################################
-
-def IncreasingPart(arr):
-    """
-    Separates the increasing part of arr to be used for the extrapolation, and the rest of the points
-    Inputs :
-        - arr : numpy array [N,2]
-            Contains the values of x and y 
-    Outputs :
-        - inside :  numpy array [N,2]
-            Points to be used for extrapolation
-        - outside :  numpy array [N,2]
-            Points not to be used for extrapolation
-    """
-    y_max = 0
-    inside = np.zeros((0,2))
-    outside= np.zeros((0,2))
-    for i in range(0,arr.shape[0]):
-        if arr[i,1]>y_max:
-            inside = np.append(inside,arr[i,:].reshape(1,2),axis=0)
-            y_max = arr[i,1]
-        else: 
-            outside = np.append(outside,arr[i,:].reshape(1,2),axis=0)
-    return inside,outside
-
-################################################################################################
 # RemovePoints #
 ################################################################################################
-def RemovePoints(arr,increment=1):
+
+def RemovePoints(arr):
     """
-    Only keep the points that are higher than the average of the previous mA/mH (modulo an increment)    
-    Inputs :
-        - arr : numpy array [N,2]
-            Contains the values of x and y 
-    Outputs :
-        - inside :  numpy array [N,2]
-            Points to be used for extrapolation
-        - outside :  numpy array [N,2]
-            Points not to be used for extrapolation
+    Only keep the points that are higher than the average of the previous mA/mH    
     """
     # Sort according to x #
-    arr_sorted = arr[np.lexsort((-arr[:,1],arr[:,0]))] # ascending in x, descending in y
 
-    x_prev = 0
-    y_tot = 0
     y_avg_prev = 0
-    count = 1
     inside = np.zeros(arr.shape[0],dtype=bool)
-    for i in range(0,arr_sorted.shape[0]):
-        if arr_sorted[i,1]>increment*y_avg_prev: # higher than previous average
-            inside[i] = True
-            
-            if x_prev != arr_sorted[i,0]: # if change in x, get avg back to 0
-                y_avg_prev = y_tot/count
-                y_tot = arr_sorted[i,1]
-                count = 1 
-            else:
-                y_tot += arr_sorted[i,1]
+    i = 0
+    while True:
+        # Get all points with same mA/mH #
+        buff = np.zeros((0,2))
+        for j in range(i,arr.shape[0]):
+            if arr[j,0]==arr[i,0]:
+                buff = np.concatenate((buff,arr[j,:].reshape(1,2)),axis=0)
+        # Keep points or not #
+        new_y_tot = 0
+        count = 0
+        for j in range(0,buff.shape[0]):
+            if buff[j,1]>y_avg_prev and buff[j,1]<buff[j,0] and buff[j,0]<700:
+                inside[i+j] = True
+                new_y_tot += buff[j,1]
                 count += 1
-
-        x_prev = arr_sorted[i,0]
+        if count != 0:
+            y_avg_prev = new_y_tot/count 
+        
+        i += buff.shape[0]
+        if i == arr.shape[0]:
+            break
+         
     return inside
-
 
 ################################################################################################
 # Extrapolation #
@@ -386,15 +386,39 @@ def Extrapolation(data,n,xmax,save_pol=False,label=''):
     weight = np.ones(data_new.shape[0])
     weight[-1] = 1000000 # give a very high weight to point (0,0)
 
-    coeff = np.polyfit (data_new[:,0],data_new[:,1],n,w=weight)
-    x_new = np.arange(0,xmax).reshape(xmax,1)
-    p = np.poly1d(coeff)
-    y_new = p(x_new)
-    out = np.concatenate((x_new,y_new),axis=1)
+    if n>=1:
+        coeff = np.polyfit (data_new[:,0],data_new[:,1],n,w=weight)
+        x_new = np.arange(0,xmax).reshape(xmax,1)
+        p = np.poly1d(coeff)
+        y_new = p(x_new)
+        out = np.concatenate((x_new,y_new),axis=1)
 
-    if save_pol and n==2:
-        np.savetxt('pol2_fit'+label+'.txt',coeff)
-
+        if save_pol and n==1:
+            np.savetxt('pol'+str(n)+'_fit'+label+'.txt',coeff)
+            print ('Saved polynom to %s'%('pol'+str(n)+'_fit'+label+'.txt'))
+    elif n==0:
+        def function_mA(x,p):
+            return (1-(2/(1+np.exp(-x/75))-1)*(1-p))*x 
+        def function_mH(x,p):
+            return (1-(2/(1+np.exp(-x/175))-1)*(1-p))*x 
+        
+        x_new = np.arange(0,xmax).reshape(xmax,1)
+        if label.find('mA')!=-1:
+            popt, pcov = curve_fit(function_mA, data_new[:,0], data_new[:,1])
+            popt = np.append(popt,75)
+            y_new = function_mA(x_new,popt)
+            if save_pol:
+                np.savetxt('weird_fit'+label+'.txt',popt)
+                print ('Saved polynom to %s'%('weird_fit'+label+'.txt'))
+        if label.find('mH')!=-1:
+            popt, pcov = curve_fit(function_mH, data_new[:,0], data_new[:,1])
+            popt = np.append(popt,175)
+            y_new = function_mH(x_new,popt)
+            if save_pol:
+                np.savetxt('weird_fit'+label+'.txt',popt)
+                print ('Saved polynom to %s'%('weird_fit'+label+'.txt'))
+        out = np.concatenate((x_new,y_new),axis=1)
+        
     return out
 
 if __name__ == '__main__':

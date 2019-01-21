@@ -29,7 +29,8 @@ from sampleList import samples_dict, number_of_bases, analysis_tags
 dbstore = DbStore()
 
 def build_sample_name(name, tag):
-    return "{}*{}".format(name, tag)
+    return name
+    #return "{}*{}".format(name, tag)
 
 def get_sample_ids_from_name(name):
     results = dbstore.find(Sample, Sample.name.like(unicode(name.replace('*', '%'))))
@@ -144,7 +145,7 @@ MainPlots_ForMC = Configuration('generatePlots.py', suffix='_for_MCbkg', mode='p
             'sample_type': 'MC',
             'lljj_plots': ['basic', 'inEllipse', 'outOfEllipse', 'inOut'],
             'llbb_plots': ['basic', 'inEllipse', 'outOfEllipse', 'inOut'],
-            'syst': True,
+            'syst': False,
             'syst_split_jec': False,
             'lljj_stages': ['no_cut', 'mll_and_met_cut', 'inverted_met_cut', 'met_cut_and_inverted_mll_cut', 'mll_cut_and_inverted_met_cut', 'mll_and_met_cut_and_mbb_cut'],
             'llbb_stages': ['no_cut', 'mll_and_met_cut', 'inverted_met_cut', 'met_cut_and_inverted_mll_cut', 'mll_cut_and_inverted_met_cut', 'mll_and_met_cut_and_mbb_cut'],
@@ -160,10 +161,11 @@ MainPlots_ForData = Configuration('generatePlots.py', suffix='_for_data', mode='
         })
 MainPlots_ForSignal = Configuration('generatePlots.py', suffix='_for_signal', mode='plots', samples=['Signal'], generation_args={
             'sample_type': 'Signal',
-            'llbb_plots': ['basic', 'inEllipse', 'outOfEllipse', 'inOut'],
-            'syst': True,
+            'llbb_plots': ['basic','inEllipse','inOut'],
+            'syst': False,
             'syst_split_jec': False,
-            'llbb_stages': ['no_cut', 'mll_and_met_cut', 'inverted_met_cut', 'met_cut_and_inverted_mll_cut', 'mll_cut_and_inverted_met_cut', 'mll_and_met_cut_and_mbb_cut'],
+            'llbb_categories': ['ElEl','MuMu'],
+            'llbb_stages': ['mll_and_met_cut']
         })
 
 """
@@ -207,8 +209,8 @@ parser.add_argument('--skip', help='Skip the building part.', action="store_true
 
 args = parser.parse_args()
 
-configurations.append(MainPlots_ForMC)
-configurations.append(MainPlots_ForData)
+#configurations.append(MainPlots_ForMC)
+#configurations.append(MainPlots_ForData)
 configurations.append(MainPlots_ForSignal)
 
 for c in configurations:
