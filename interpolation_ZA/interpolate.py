@@ -3,6 +3,7 @@
 import os
 import sys
 import warnings
+import pprint
 
 import argparse
 import numpy as np
@@ -19,7 +20,7 @@ def get_options():
     """
     Parse and return the arguments provided by the user.
     """
-    parser = argparse.ArgumentParser(description='Compare names of input and output files for matches and potentiel failed files')
+    parser = argparse.ArgumentParser(description='Applies the bin interpolation according to different techniques')
     parser.add_argument('-a','--average', action='store', required=False, type=int, default=0,
         help='If averaged interpolation is required -> input number of neighbours')
     parser.add_argument('-t','--triangle', action='store_true', required=False, default=False,
@@ -27,7 +28,7 @@ def get_options():
     parser.add_argument('-s','--scan', action='store', required=False, type=str, default='',
         help='If scan for hyperparameters to be performed [edit NeuralNet.py] and given name')
     parser.add_argument('-r','--reporting', action='store', required=False, type=str, default='',
-        help='If reporting is necessary for analyzing scan given the csv file given')
+        help='If reporting is necessary for analyzing scan given the csv file (must provide file)')
     parser.add_argument('-e','--evaluate', action='store', required=False, type=int, default=0,
         help='Wether to evaluate the models with cross validation : provide number of folds.\nCAUTION : requires the option --scan' )
     parser.add_argument('-d','--deploy', action='store', required=False, type=str, default='',
@@ -67,7 +68,7 @@ def main():
     from average import InterpolateAverage, EvaluateAverage
     from triangles_interpolation import InterpolateTriangles, EvaluateTriangles
     from comparison import PlotComparison
-    from get_link_dict import GetHistDictOld, GetHistDictNew
+    from get_link_dict import GetHistDictOld, GetHistDict
     from NeuralNet import HyperScan, HyperReport, HyperEvaluate, HyperDeploy, HyperVerif, HyperRestore
     # Needed because PyROOT messes with argparse
 
@@ -77,13 +78,13 @@ def main():
     # Input path #
     print ('[INFO] Starting histograms input')
 
-    path_to_files = '/nfs/scratch/fynu/fbury/CMSSW_8_0_30/src/cp3_llbb/ZATools/factories_ZA/test_for_signal/slurm/output/'
-    #path_to_files = '/nfs/scratch/fynu/fbury/CMSSW_8_0_30/src/cp3_llbb/ZATools/factories_ZA/test_full_for_signal/slurm/output/' # TODO change way to extract mH, mA in LoopOverHists
+    path_to_files = '/nfs/scratch/fynu/fbury/CMSSW_8_0_30/src/cp3_llbb/ZATools/factories_ZA/fullHist/slurm/output/'
+    path_to_json = '/nfs/scratch/fynu/fbury/CMSSW_8_0_30/src/cp3_llbb/ZATools/scripts_ZA/ellipsesScripts/fullEllipseParamWindowFit_{}.json'
 
     # Loop to get histograms #
     print ('-'*80)
-    name_dict_MuMu = GetHistDictOld('MuMu')
-    name_dict_ElEl = GetHistDictOld('ElEl')
+    name_dict_MuMu = GetHistDict(path_to_files,path_to_json,'MuMu')
+    name_dict_ElEl = GetHistDict(path_to_files,path_to_json,'ElEl')
     print ('\n[INFO] MuMu Histograms\n')
     hist_dict_MuMu = LoopOverHists(path_to_files,name_dict_MuMu,verbose=False,return_numpy=True)
     print ('-'*80)
@@ -135,11 +136,11 @@ def main():
         y_DNN = np.append(y_DNN,[v],axis=0)
 
     # Splitting and preprocessing
-    x_train,x_test,y_train,y_test = train_test_split(x_DNN,y_DNN,test_size=0.3) # TODO change when enough data
+    x_train,x_test,y_train,y_test = train_test_split(x_DNN,y_DNN,test_size=0.3) 
 
     scaler = preprocessing.StandardScaler().fit(x_train)
     x_train = scaler.transform(x_train)
-    #x_test = scaler.transform(x_test) #TODO : change when enough data
+    x_test = scaler.transform(x_test) 
 
     # Make HyperScan #
     if opt.scan != '':
@@ -180,7 +181,7 @@ def main():
 
     # Comparison between different techniques #
     if opt.compare:
-        inter_dict = {} # Will contain the dict of the different interpolation outputs (which are dict also)
+        inter_dict = {} # Will contain the dict of the different interpolation outputs (which are dicts also)
         try :
             inter_dict['Average'] = inter_avg
             print ('Average interpolation detected')

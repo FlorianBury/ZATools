@@ -114,8 +114,7 @@ def HyperScan(x_train,y_train,name):
             'optimizer' : [RMSprop],
             'epochs' : [10000],
             'batch_size' : [1],
-            'loss_function' : [binary_crossentropy]
-# 504
+            'loss_function' : [mean_squared_error]
         }
     #p = {
     #        'lr' : 0.001,

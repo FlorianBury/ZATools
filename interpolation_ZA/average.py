@@ -12,6 +12,7 @@ import numpy as np
 from operator import itemgetter
 
 from scipy.stats import chisquare
+from sklearn.metrics import mean_squared_error 
 
 import matplotlib.pyplot as plt                                                                  
 
@@ -101,20 +102,27 @@ def EvaluateAverage(hist_dict,max_n):
 
     # Scan among all the possible number of neighbours #
     chi2_list = []
+    mse_list = []
     for n in range(1,max_n+1):
         chi2_sum = 0.
+        mse_sum = 0.
         # Interpolate #
         eval_avg = InterpolateAverage(hist_dict,eval_list,n)      
         # Evaluate chi2 for each hist #
         for key in eval_avg.keys():
-            chi2,p = chisquare(f_obs=eval_avg[key],f_exp=hist_dict[key])
-            chi2_sum += chi2     
+            #chi2,p = chisquare(f_obs=eval_avg[key],f_exp=hist_dict[key])
+            mse  = mean_squared_error(y_true=np.transpose(hist_dict[key]),y_pred=np.transpose(eval_avg[key]))
+            #chi2_sum += chi2     
+            mse_sum += mse
         # Keeps in memory #
         chi2_list.append(chi2_sum)
+        mse_list.append(mse_sum)
+
 
     # Prints results #
-    for idx,val in enumerate(chi2_list):                                                   
-         print ('Average evaluation with %d neighbours :  chi2 sum = %0.5f'%(idx+1,val))
+    for idx,val in enumerate(mse_list,1):                                                   
+         #print ('Average evaluation with %d neighbours :  chi2 sum = %0.5f'%(idx+1,val))
+         print ('Average evaluation with %d neighbours :  MSE sum = %0.5f'%(idx,val))
 
     # Find best model #
     min_index, min_value = min(enumerate(chi2_list), key=itemgetter(1))
@@ -123,7 +131,7 @@ def EvaluateAverage(hist_dict,max_n):
 
     # Get the hist output #
     #output_dict = InterpolateAverage(hist_dict,eval_list,best_n)
-    output_dict = InterpolateAverage(hist_dict,eval_list,1) #TODO, use best_n
+    output_dict = InterpolateAverage(hist_dict,eval_list,3) #TODO, use best_n
 
     return output_dict
 

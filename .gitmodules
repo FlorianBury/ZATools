@@ -1,0 +1,3 @@
+[submodule "interpolation_ZA/talos"]
+	path = interpolation_ZA/talos
+	url = https://github.com/autonomio/talos.git

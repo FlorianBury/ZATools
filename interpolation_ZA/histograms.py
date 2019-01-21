@@ -59,8 +59,14 @@ def LoopOverHists(input_dir,hist_dict,verbose=False, return_numpy=False):
             f = TFile.Open(name)
             TH1.AddDirectory(0) # Required, "Otherwise the file owns and deletes the histogram." (cfr Root forum)
             h = f.Get(hist_name)
-            mAmH = (float(re.findall(r'\d+', filename)[3]),float(re.findall(r'\d+', filename)[2])) # record mH, mA as tuple t be used as a key in the dict
-            #mHmA = (float(re.findall(r'\d+', filename)[2])+.01*float(re.findall(r'\d+', filename)[3]),float(re.findall(r'\d+', filename)[4])+.01*float(re.findall(r'\d+', filename)[5])) # record mH, mA as tuple t be used as a key in the dict
+            p = re.compile(r'\d+[p]\d+')
+            mH = float(p.findall(name)[0].replace('p','.'))
+            mA = float(p.findall(name)[1].replace('p','.'))
+            mAmH = (mA,mH)
+            #mAmH = (float(re.findall(r'\d+', filename)[3]),float(re.findall(r'\d+', filename)[2])) # record mH, mA as tuple t be used as a key in the dict
+            #mHmA = (float(re.findall(r'\d+', filename)[2])+.01*float(re.findall(r'\d+', filename)[3]),float(re.findall(r'\d+', filename)[4])+.01*float(re.findall(r'\d+', filename)[5])) 
+            
+            # record mH, mA as tuple t be used as a key in the dict
             TH1_dict[mAmH] = h.Clone()
             f.Close()
             if verbose:
@@ -80,13 +86,6 @@ def LoopOverHists(input_dir,hist_dict,verbose=False, return_numpy=False):
         return numpy_dict
             
         
-    # Loop over hist inside file #
-    #hnames = []
-    #for key in f.GetListOfKeys():
-    #    h = key.ReadObj()
-    #    if h.ClassName() == 'TH1F' or h.ClassName() == 'TH2F':
-    #        hnames.append(h.GetName())
-   
 ###############################################################################
 # NormalizeHist #
 ###############################################################################
