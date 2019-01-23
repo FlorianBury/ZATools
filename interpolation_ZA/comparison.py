@@ -129,7 +129,7 @@ def Plot2DComparison(inter_dict,path):
     ########################### Comparison bin per bin  #########################
     for b in range(0,6): # Loop over bins 
         # Generate subplots #
-        fig,ax = plt.subplots(1,len(list(inter_dict.keys())),figsize=(16,9))
+        fig,ax = plt.subplots(1,len(list(inter_dict.keys())),figsize=(16,6))
         fig.subplots_adjust(right=0.85, wspace = 0.3, hspace=0.3, left=0.05, bottom=0.1)
 
         # Make the plot of the given bin i with the different methods #
@@ -140,13 +140,12 @@ def Plot2DComparison(inter_dict,path):
             y = np.asarray(list(hist_dict.keys()))[:,1]
             # Get corresponding bin array from values #
             z = np.asarray(list(hist_dict.values()))[:,b]
-
             # Plot on subplot #
-            im = ax[0,i].hexbin(x,y,z[:,b],gridsize=30) 
-            ax[0,i].plot([0, 1000], [0, 1000], ls="--", c=".3")
-            ax[0,i].set_xlabel('$m_{jj}$')
-            ax[0,i].set_ylabel('$m_{lljj}$')
-            ax[0,i].set_title('Method : %s'%s)
+            im = ax[i].hexbin(x,y,z,gridsize=30) 
+            ax[i].plot([0, 1000], [0, 1000], ls="--", c=".3")
+            ax[i].set_xlabel('$m_{jj}$')
+            ax[i].set_ylabel('$m_{lljj}$')
+            ax[i].set_title('Method : %s'%name)
 
             i += 1
 
@@ -154,7 +153,7 @@ def Plot2DComparison(inter_dict,path):
         cbar_ax = fig.add_axes([0.9, 0.15, 0.05, 0.7]) 
         fig.colorbar(im, cax=cbar_ax)
         fig.suptitle('Interpolation of bin %d'%b, fontsize=16)
-        fig.savefig(os.path.join(path,'bin%s.png'%b))                                                                                                                                   
+        fig.savefig(os.path.join(path,'bin%d.png'%b))                                                                                                                                   
         plt.close()
  
 
