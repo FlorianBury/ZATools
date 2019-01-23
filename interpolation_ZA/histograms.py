@@ -5,7 +5,6 @@ import sys
 import math
 import socket
 import json
-import warnings
 
 import array
 import numpy as np
@@ -137,18 +136,26 @@ def CheckHist(dico,verbose=False):
             contains mass point (tuple) as key and bin content (numpy array [1,6]) as values
     Output : Prints cases to investigate
     """
+    weird_cases = 0
+    total_cases = 0
     for key,val in dico.items():
         diff = np.diff(val) # Get diff a[n+1]-a[n]
-        if diff[0]>0:
-            if verbose:
-                warnings.warn("First bin looks weird")
-                print (val)
-                # Signal not exactly at center, possible but have to check
-        check = diff[1:]>0
-        if  np.any(check):
-            print("\t[WARNING] At least one bin is not decreasing compared to previous one, might need to check that")   
-            print ('\tConfig : ',key)
-            print ('\tBins : ',val)
+        total_cases += 1
+        weird = False
+        weird_bins = []
+        for i,d in enumerate(diff):
+            if d>0:
+                weird = True
+                weird_bins.append(i)
+        if weird:
+                print("[WARNING] Bin(s) %s not decreasing, might want to check that"%('\t'.join(str(e) for e in weird_bins)))   
+                print ('\tConfig : ',key)
+                print ('\tBins : ',val)
+                weird_cases += 1
+        #check = diff>0
+        #if  np.any(check):
+    print ('Weird cases : %d/%d'%(weird_cases,total_cases))
+
             # Bin content should decrease but might be a little variation, to be checked
       
 ###############################################################################

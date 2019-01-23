@@ -3,9 +3,8 @@ import os
 import re
 import sys
 import math
-import socket
 import json
-import warnings
+import pprint
 
 import array
 import numpy as np
@@ -16,9 +15,9 @@ from scipy.stats import chisquare
 import matplotlib.pyplot as plt                                                                  
 
 ###############################################################################
-# PlotComparison #
+# PlotRhoComparison #
 ###############################################################################
-def PlotComparison(inter_dict,name):
+def PlotRhoComparison(inter_dict,path):
     """
     Takes a serie of N dict histograms defined as dictionaries themselves : 
     Inputs :
@@ -36,11 +35,6 @@ def PlotComparison(inter_dict,name):
         Comparison of the three distribution for each mass point 
     """
 
-    # Create directory #
-    path = os.path.join(os.getcwd(),name)
-    if not os.path.isdir(path):
-        os.makedirs(path)
-
     # Binning parameters #
     N = len(inter_dict.keys())
     bin_dict = {} # Will contain the bins for each hist
@@ -55,7 +49,7 @@ def PlotComparison(inter_dict,name):
     # Plot section #
     print ('[INFO] Starting interpolate plot section')
     for masspoint in list(inter_dict.values())[0].keys(): # Loop over mass points of first dict
-        print ('Masspoint : m_H = %0.f, m_A = %0.f'%(masspoint[1],masspoint[0]))
+        print ('Masspoint : m_H = %0.2f, m_A = %0.2f'%(masspoint[1],masspoint[0]))
         color=iter(plt.cm.rainbow(np.linspace(0.3,1,N)))
         fig = plt.figure()
         for name, hist_dict in inter_dict.items(): # Loop over the histograms dict
@@ -90,6 +84,82 @@ def PlotComparison(inter_dict,name):
 
         # Save #
         fig.savefig(os.path.join(path,'m_H_%d_m_A_%d.png'%(masspoint[1],masspoint[0])))
+
+
+###############################################################################
+# Plot2DComparison #
+###############################################################################
+def Plot2DComparison(inter_dict,path):
+    # Check that they all have the same keys #
+    #for k,d in inter_dict.items():
+    #    print (k)
+    #    pprint.pprint(d)
+    #    x_and_y = list(inter_dict[k].keys())
+    #    print( x_and_y)
+
+    ########################### Comparison per method #########################
+    for name, hist_dict in inter_dict.items(): # Loop over methods
+        # Get x and y from keys #
+        x = np.asarray(list(hist_dict.keys()))[:,0]
+        y = np.asarray(list(hist_dict.keys()))[:,1]
+        # Get z bins array from values #
+        z = np.asarray(list(hist_dict.values()))
+        
+        # Generate subplots #
+        fig,ax = plt.subplots(2,3,figsize=(16,9))
+        fig.subplots_adjust(right=0.85, wspace = 0.3, hspace=0.3, left=0.05, bottom=0.1)
+        # Loop over subplots #
+        for i in range(0,6): # Loop over bins 
+            ix = int(i/3)
+            iy = i%3
+            im = ax[ix,iy].hexbin(x,y,z[:,i],gridsize=30)
+            ax[ix,iy].plot([0, 1000], [0, 1000], ls="--", c=".3")
+            ax[ix,iy].set_xlabel('$m_{jj}$')
+            ax[ix,iy].set_ylabel('$m_{lljj}$')
+            ax[ix,iy].set_title('Bin %d'%i)
+
+        # Add colorbar #
+        cbar_ax = fig.add_axes([0.9, 0.15, 0.05, 0.7]) 
+        fig.colorbar(im, cax=cbar_ax)
+        fig.suptitle('Interpolation with %s'%name, fontsize=16)
+        fig.savefig(os.path.join(path,name+'.png'))                                                                                                                                   
+        plt.close()
+    
+
+    ########################### Comparison bin per bin  #########################
+    for b in range(0,6): # Loop over bins 
+        # Generate subplots #
+        fig,ax = plt.subplots(1,len(list(inter_dict.keys())),figsize=(16,9))
+        fig.subplots_adjust(right=0.85, wspace = 0.3, hspace=0.3, left=0.05, bottom=0.1)
+
+        # Make the plot of the given bin i with the different methods #
+        i = 0
+        for name, hist_dict in inter_dict.items(): # Loop over methods
+            # Get x and y from keys #
+            x = np.asarray(list(hist_dict.keys()))[:,0]
+            y = np.asarray(list(hist_dict.keys()))[:,1]
+            # Get corresponding bin array from values #
+            z = np.asarray(list(hist_dict.values()))[:,b]
+
+            # Plot on subplot #
+            im = ax[0,i].hexbin(x,y,z[:,b],gridsize=30) 
+            ax[0,i].plot([0, 1000], [0, 1000], ls="--", c=".3")
+            ax[0,i].set_xlabel('$m_{jj}$')
+            ax[0,i].set_ylabel('$m_{lljj}$')
+            ax[0,i].set_title('Method : %s'%s)
+
+            i += 1
+
+        # Add colorbar #
+        cbar_ax = fig.add_axes([0.9, 0.15, 0.05, 0.7]) 
+        fig.colorbar(im, cax=cbar_ax)
+        fig.suptitle('Interpolation of bin %d'%b, fontsize=16)
+        fig.savefig(os.path.join(path,'bin%s.png'%b))                                                                                                                                   
+        plt.close()
+ 
+
+    
+
 
 
 

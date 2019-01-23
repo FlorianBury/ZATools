@@ -29,8 +29,8 @@ def get_options():
         help='If scan for hyperparameters to be performed [edit NeuralNet.py] and given name')
     parser.add_argument('-r','--reporting', action='store', required=False, type=str, default='',
         help='If reporting is necessary for analyzing scan given the csv file (must provide file)')
-    parser.add_argument('-e','--evaluate', action='store', required=False, type=int, default=0,
-        help='Wether to evaluate the models with cross validation : provide number of folds.\nCAUTION : requires the option --scan' )
+    #parser.add_argument('-e','--evaluate', action='store', required=False, type=int, default=0,
+    #    help='Wether to evaluate the models with cross validation : provide number of folds.\nCAUTION : requires the option --scan' )
     parser.add_argument('-d','--deploy', action='store', required=False, type=str, default='',
         help='Wether to deploy the model, provide the name\n.CAUTION : requires the option --scan.\nWARNING : if option --evaluate, will select the best model according to cross validation,\nif not, takes the one with lowest val_loss')
     parser.add_argument('-i','--interpolate', action='store', required=False, type=str, default='',
@@ -43,9 +43,9 @@ def get_options():
     opt = parser.parse_args()
 
     # Option checks #
-    if opt.evaluate!=0 and opt.scan=='':
-        warnings.warn('--evaluate options requires --scan option')
-        sys.exit(1)
+    #if opt.evaluate!=0 and opt.scan=='':
+    #    warnings.warn('--evaluate options requires --scan option')
+    #    sys.exit(1)
     if opt.deploy!='' and opt.scan=='':
         warnings.warn('--deploy options requires --scan option')
         sys.exit(1)
@@ -67,9 +67,10 @@ def main():
     from histograms import LoopOverHists, NormalizeHist, EvaluationGrid, AddHist, CheckHist
     from average import InterpolateAverage, EvaluateAverage
     from triangles_interpolation import InterpolateTriangles, EvaluateTriangles
-    from comparison import PlotComparison
+    from comparison import PlotRhoComparison, Plot2DComparison
     from get_link_dict import GetHistDictOld, GetHistDict
     from NeuralNet import HyperScan, HyperReport, HyperEvaluate, HyperDeploy, HyperVerif, HyperRestore
+    from generate_mask import GenerateMask 
     # Needed because PyROOT messes with argparse
 
     #############################################################################################
@@ -97,9 +98,9 @@ def main():
     print ('-'*80)
     # Checks shape of distributions #
     print ('[INFO] Checking MuMu sample')
-    CheckHist(hist_dict_MuMu,verbose=False)
+    CheckHist(hist_dict_MuMu,verbose=True)
     print ('[INFO] Checking ElEl sample')
-    CheckHist(hist_dict_ElEl,verbose=False)
+    CheckHist(hist_dict_ElEl,verbose=True)
     print ('-'*80)
 
     # Treat numpy arrays : normalization and addition #
@@ -136,34 +137,39 @@ def main():
         y_DNN = np.append(y_DNN,[v],axis=0)
 
     # Splitting and preprocessing
-    x_train,x_test,y_train,y_test = train_test_split(x_DNN,y_DNN,test_size=0.3) 
+    mask = GenerateMask(x_DNN.shape[0],'data')
+    x_train = x_DNN [mask==True]
+    x_test = x_DNN [mask==False]
+    y_train = y_DNN [mask==True]
+    y_test = y_DNN [mask==False]
+    #x_train,x_test,y_train,y_test = train_test_split(x_DNN,y_DNN,test_size=0.3) 
 
     scaler = preprocessing.StandardScaler().fit(x_train)
-    x_train = scaler.transform(x_train)
-    x_test = scaler.transform(x_test) 
+    #x_train_scaled = scaler.transform(x_train)
+    #x_test_scaled = scaler.transform(x_test) 
 
     # Make HyperScan #
     if opt.scan != '':
         print ('[INFO] Starting Hyperscan')
         print ("Total training size : ",x_train.shape[0],'/',x_DNN.shape[0])
-        h = HyperScan(x_train,y_train,name=opt.scan)
+        h = HyperScan(x_train,y_train,x_test,y_test,scaler,name=opt.scan)
         print ('... Done')
 
     # Make HyperEvaluate #
-    best_model = -1
-    if opt.evaluate != 0:
-        print ('[INFO] Starting HyperEvaluate')
-        print ("Total validation size : ",x_test.shape[0],'/',x_DNN.shape[0])
-        if (x_test.shape[0]==0):
-            print ("[WARNING] No data to apply cross validation, not applied")
-            return # Avoids being stuck with no data in evaliation 
-        best_model = HyperEvaluate(h,x_test,y_test,opt.evaluate)
-        print ('... Done')
+    #best_model = -1
+    #if opt.evaluate != 0:
+    #    print ('[INFO] Starting HyperEvaluate')
+    #    print ("Total validation size : ",x_test.shape[0],'/',x_DNN.shape[0])
+    #    if (x_test.shape[0]==0):
+    #        print ("[WARNING] No data to apply cross validation, not applied")
+    #        return # Avoids being stuck with no data in evaliation 
+    #    best_model = HyperEvaluate(h,x_test,y_test,opt.evaluate)
+    #    print ('... Done')
 
     # Make HyperDeploy #
     if opt.deploy!='':
         print ('[INFO] Starting HyperDeploy')
-        HyperDeploy(h,opt.deploy,best_model)
+        HyperDeploy(h,opt.deploy)
         print ('... Done')
 
     # Make HyperReport #
@@ -176,7 +182,7 @@ def main():
     if opt.interpolate!='':
         print ('[INFO] Starting interpolation with model')
         inputs = np.asarray(eval_grid)
-        inter_DNN = HyperRestore(inputs,scaler,opt.interpolate+'.zip',fft=True)
+        inter_DNN = HyperRestore(inputs,opt.interpolate+'.zip',scaler=scaler,fft=True)
         print ('... Done')
 
     # Comparison between different techniques #
@@ -198,29 +204,72 @@ def main():
         except:
             print ('DNN interpolation not detected')
 
-        PlotComparison(inter_dict,opt.interpolate+'/interpolation/')
+        PlotRhoComparison(inter_dict,opt.interpolate+'/interpolation/')
 
     #############################################################################################
     # Verification #
     #############################################################################################
     if opt.verification!='':
-        print ('[INFO] Cross check verification with average')
-        check_avg = EvaluateAverage(hist_dict, 20)
-        print ('... Done')
+        ################################ Rho bins histograms ####################################
+        ## Generate the train dict using x_train and y_train #
+        #train_dict = {}
+        #for i in range(0,x_train.shape[0]):
+        #    train_dict[(x_train[i,0],x_train[i,1])] = y_train[i,:]
 
-        print ('[INFO] Cross check verification with triangles')
-        check_tri = EvaluateTriangles(hist_dict)
-        print ('... Done')
+        ## Generate the test dict using x_test and y_test #
+        #test_dict = {}
+        #for i in range(0,x_test.shape[0]):
+        #    test_dict[(x_test[i,0],x_test[i,1])] = y_test[i,:]
 
-        print ('[INFO] Cross check verification with Neural Network')
-        check_DNN = HyperVerif(hist_dict,scaler=scaler,path=opt.verification+'.zip')
-        print ('... Done')
+        # Create directory #
+        path_plot = os.path.join(os.getcwd(),opt.verification)
+        if not os.path.isdir(path_plot):
+            os.makedirs(path_plot)
+        #
+        #print ('[INFO] Cross check verification with average')
+        #check_avg = EvaluateAverage(train_dict,test_dict, 5)
+        #print ('... Done')
 
-        check_dict = {'True':hist_dict,'Average':check_avg,'Delaunay Triangle':check_tri,'DNN':check_DNN}
+        #print ('[INFO] Cross check verification with triangles')
+        #check_tri = EvaluateTriangles(train_dict,test_dict)
+        #print ('... Done')
 
-        print ('[INFO] Comparison plots')
-        PlotComparison(check_dict,opt.verification+'/verification/')
-        print ('... Done')
+        #print ('[INFO] Cross check verification with Neural Network')
+        #check_DNN = HyperVerif(test_dict,scaler=scaler,path=opt.verification+'.zip') # because the "train" part has already been used
+        #print ('... Done')
+
+        #check_dict = {'True':test_dict,'Average':check_avg,'Delaunay Triangle':check_tri,'DNN':check_DNN}
+
+        #print ('[INFO] Comparison plots')
+        #PlotRhoComparison(check_dict,path_plot)
+        #print ('... Done')
+
+        ################################ 2D bins histograms ####################################
+        # Generate the grid #
+        n = 100 # number of bins in both directions
+        mllbb = np.linspace(0,1000,n)
+        mbb = np.linspace(0,1000,n)
+        
+        # make dummy dict #
+        grid_dict = {}
+        for i in range(0,n):
+            for j in range(0,n):
+                grid_dict[(mbb[i],mllbb[j])] = 0
+
+        plot_avg = EvaluateAverage(hist_dict,grid_dict,5)
+        plot_tri = EvaluateTriangles(hist_dict,grid_dict)
+        plot_DNN = HyperVerif(grid_dict,scaler=scaler,path=opt.verification+'.zip')
+
+        plot_dict = {'Average':plot_avg,'Delaunay Triangle':plot_tri,'DNN':plot_DNN}
+        Plot2DComparison(plot_dict,path_plot)
+        
+         
+
+
+
+
+
+    
 
 
 if __name__ == "__main__":

@@ -193,13 +193,17 @@ def PlotGraph(graph,eval_list,name):
 ###############################################################################
 # EvaluateTriangles #
 ###############################################################################
-def EvaluateTriangles(hist_dict):
+def EvaluateTriangles(train_dict,test_dict):
     # Turn keys from dict into list of list #
     eval_list = []
-    for key in hist_dict.keys():
+    for key in test_dict.keys():
         eval_list.append(list((key[0],key[1])))
-    
-    out_dict = InterpolateTriangles(hist_dict,eval_list)
+    #print ('train',train_dict)
+    #print ('test',test_dict)
+        
+    out_dict = InterpolateTriangles(train_dict,eval_list)
+     #print ('out',out_dict)
+    #sys.exit()
     return out_dict
 
 
