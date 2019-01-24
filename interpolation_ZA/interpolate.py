@@ -98,9 +98,9 @@ def main():
     print ('-'*80)
     # Checks shape of distributions #
     print ('[INFO] Checking MuMu sample')
-    CheckHist(hist_dict_MuMu,verbose=True)
+    CheckHist(hist_dict_MuMu,verbose=False)
     print ('[INFO] Checking ElEl sample')
-    CheckHist(hist_dict_ElEl,verbose=True)
+    CheckHist(hist_dict_ElEl,verbose=False)
     print ('-'*80)
 
     # Treat numpy arrays : normalization and addition #
@@ -211,38 +211,30 @@ def main():
     #############################################################################################
     if opt.verification!='':
         ################################ Rho bins histograms ####################################
-        ## Generate the train dict using x_train and y_train #
-        #train_dict = {}
-        #for i in range(0,x_train.shape[0]):
-        #    train_dict[(x_train[i,0],x_train[i,1])] = y_train[i,:]
+        # Generate the train dict using x_train and y_train #
+        train_dict = {}
+        for i in range(0,x_train.shape[0]):
+            train_dict[(x_train[i,0],x_train[i,1])] = y_train[i,:]
 
-        ## Generate the test dict using x_test and y_test #
-        #test_dict = {}
-        #for i in range(0,x_test.shape[0]):
-        #    test_dict[(x_test[i,0],x_test[i,1])] = y_test[i,:]
+        # Generate the test dict using x_test and y_test #
+        test_dict = {}
+        for i in range(0,x_test.shape[0]):
+            test_dict[(x_test[i,0],x_test[i,1])] = y_test[i,:]
 
         # Create directory #
         path_plot = os.path.join(os.getcwd(),opt.verification)
         if not os.path.isdir(path_plot):
             os.makedirs(path_plot)
-        #
-        #print ('[INFO] Cross check verification with average')
-        #check_avg = EvaluateAverage(train_dict,test_dict, 5)
-        #print ('... Done')
+        
+        print ('[INFO] Comparison plots')
+        check_avg = EvaluateAverage(train_dict,test_dict, 5, scan=True)
+        check_tri = EvaluateTriangles(train_dict,test_dict)
+        check_DNN = HyperVerif(test_dict,scaler=scaler,path=opt.verification+'.zip') # because the "train" part has already been used
 
-        #print ('[INFO] Cross check verification with triangles')
-        #check_tri = EvaluateTriangles(train_dict,test_dict)
-        #print ('... Done')
+        check_dict = {'True':test_dict,'Average':check_avg,'Delaunay Triangle':check_tri,'DNN':check_DNN}
 
-        #print ('[INFO] Cross check verification with Neural Network')
-        #check_DNN = HyperVerif(test_dict,scaler=scaler,path=opt.verification+'.zip') # because the "train" part has already been used
-        #print ('... Done')
-
-        #check_dict = {'True':test_dict,'Average':check_avg,'Delaunay Triangle':check_tri,'DNN':check_DNN}
-
-        #print ('[INFO] Comparison plots')
-        #PlotRhoComparison(check_dict,path_plot)
-        #print ('... Done')
+        PlotRhoComparison(check_dict,path_plot)
+        print ('... Rho comparison done')
 
         ################################ 2D bins histograms ####################################
         # Generate the grid #
@@ -256,20 +248,14 @@ def main():
             for j in range(0,n):
                 grid_dict[(mbb[i],mllbb[j])] = 0
 
-        plot_avg = EvaluateAverage(hist_dict,grid_dict,5)
+        plot_avg = EvaluateAverage(hist_dict,grid_dict,2)
         plot_tri = EvaluateTriangles(hist_dict,grid_dict)
         plot_DNN = HyperVerif(grid_dict,scaler=scaler,path=opt.verification+'.zip')
 
         plot_dict = {'Average':plot_avg,'Delaunay Triangle':plot_tri,'DNN':plot_DNN}
         Plot2DComparison(plot_dict,path_plot)
+        print ('... 2D comparison done')
         
-         
-
-
-
-
-
-    
 
 
 if __name__ == "__main__":

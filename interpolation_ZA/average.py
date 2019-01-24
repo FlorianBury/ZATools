@@ -3,9 +3,9 @@ import os
 import re
 import sys
 import math
-import socket
 import json
 import warnings
+import pprint
 
 import array
 import numpy as np
@@ -48,37 +48,34 @@ def InterpolateAverage(neighbours,eval_grid,n_neigh):
     """
     grid = {} # To be returned
     dist_dict = {} # keep memory of the distances 
-    for val in eval_grid: # Loop over the points to interpolate
+    for point in eval_grid: # Loop over the points to interpolate
         hist_arr = np.zeros(6) # will be the hist array for the grid element
-        for key in neighbours: # Loop over neighbours to find the closests
-            dist_dict[key] = distance(val,key)
+        for neighbour_point in neighbours: # Loop over neighbours to find the closests
+            dist_dict[neighbour_point] = distance(point,neighbour_point)
         sort_dist = sorted(dist_dict.items(), key=itemgetter(1)) # sorts dist_dict : tuple ((mA,mH),distance)
-        #if sort_dist[0][1] == 0:
-        #    n_neigh += 1 # if first is 0, add one because we will not take it into account
 
         # Get total distance of n_neigh closest neighbours #
         total_dist = 0
-        for e in sort_dist[:n_neigh]: # Loop over the n_neigh closest neighbours
-            total_dist += e[1]
-            # don't need to remove point where dist=0 because won't impact the sum 
-
-        for e in sort_dist[:n_neigh]: # Loop over the n_neigh closest neighbours
-            if e[1] == 0: 
-                continue
-                # Remove if dist is zero : we don't want to interpolate from the same point
-            arr = neighbours[e[0]]*e[1]/total_dist # Gets hist array (=value of dict) corresponding to a close neighbour (weighted)
+        for close_neighbour in sort_dist[:n_neigh]: # Loop over the n_neigh closest neighbours
+            # close_neighbour[0] -> tuple (mA,mH)
+            # close_neighbour[1] -> distance
+            if close_neighbour[1] == 0:
+                print ('Distance is 0 -> Same point found')
+            arr = neighbours[close_neighbour[0]]*close_neighbour[1]  # Gets hist array (=value of dict) corresponding to a close neighbour (weighted)
+            total_dist += close_neighbour[1]
             hist_arr = np.add(hist_arr,arr)
-
-        grid [tuple(val)] = hist_arr
+        
+        hist_arr /= total_dist # weighted
+        grid [tuple(point)] = hist_arr
     
     return grid 
 
 ###############################################################################
 # EvaluateAverage #
 ###############################################################################
-def EvaluateAverage(train_dict,test_dict,max_n):
+def EvaluateAverage(train_dict,test_dict,max_n,scan=False):
     """
-    Peforms the average interpolation for know points as a cross-check
+    Performs the average interpolation for know points as a cross-check
     Tests different number or neighbours (from 1 to max_n)
     Finds the best case (minimizing chi2) and produces the comparison plots
     Inputs :
@@ -101,38 +98,40 @@ def EvaluateAverage(train_dict,test_dict,max_n):
         eval_list.append(list(key))
 
     # Scan among all the possible number of neighbours #
-    #chi2_list = []
-    #mse_list = []
-    #for n in range(1,max_n+1):
-    #    chi2_sum = 0.
-    #    mse_sum = 0.
-    #    # Interpolate #
-    #    eval_avg = InterpolateAverage(train_dict,eval_list,n)      
-    #    print (eval_avg)
-    #    # Evaluate chi2 for each hist #
-    #    for key in eval_avg.keys():
-    #        #chi2,p = chisquare(f_obs=eval_avg[key],f_exp=hist_dict[key])
-    #        mse  = mean_squared_error(y_true=np.transpose(test_dict[key]),y_pred=np.transpose(eval_avg[key]))
-    #        #chi2_sum += chi2     
-    #        mse_sum += mse
-    #    # Keeps in memory #
-    #    chi2_list.append(chi2_sum)
-    #    mse_list.append(mse_sum)
+    if scan:
+        chi2_list = []
+        mse_list = []
+        for n in range(1,max_n+1):
+            chi2_sum = 0.
+            mse_sum = 0.
+            # Interpolate #
+            eval_avg = InterpolateAverage(train_dict,eval_list,n)      
+            # Evaluate chi2 for each hist #
+            for key in eval_avg.keys():
+                #chi2,p = chisquare(f_obs=eval_avg[key],f_exp=hist_dict[key])
+                mse  = mean_squared_error(y_true=np.transpose(test_dict[key]),y_pred=np.transpose(eval_avg[key]))
+                #chi2_sum += chi2     
+                mse_sum += mse
+            # Keeps in memory #
+            chi2_list.append(chi2_sum)
+            mse_list.append(mse_sum)
 
 
-    ## Prints results #
-    #for idx,val in enumerate(mse_list,1):                                                   
-    #     #print ('Average evaluation with %d neighbours :  chi2 sum = %0.5f'%(idx+1,val))
-    #     print ('Average evaluation with %d neighbours :  MSE sum = %0.5f'%(idx,val))
+        # Prints results #
+        for idx,val in enumerate(mse_list,1):                                                   
+             #print ('Average evaluation with %d neighbours :  chi2 sum = %0.5f'%(idx+1,val))
+             print ('Average evaluation with %d neighbours :  MSE sum = %0.5f'%(idx,val))
 
-    ## Find best model #
-    #min_index, min_value = min(enumerate(chi2_list), key=itemgetter(1))
-    #best_n =  min_index +1
-    #print ('Best number of neighbours -> ',best_n)
+        # Find best model #
+        min_index, min_value = min(enumerate(mse_list), key=itemgetter(1))
+        best_n =  min_index +1
+        print ('Best number of neighbours -> ',best_n)
 
     # Get the hist output #
-    #output_dict = InterpolateAverage(hist_dict,eval_list,best_n)
-    output_dict = InterpolateAverage(train_dict,eval_list,3) #TODO, use best_n
+    if scan:
+        output_dict = InterpolateAverage(hist_dict,eval_list,best_n)
+    else:
+        output_dict = InterpolateAverage(train_dict,eval_list,max_n) 
 
     return output_dict
 

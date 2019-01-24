@@ -56,7 +56,9 @@ def InterpolationModel(x_train,y_train,x_val,y_val,params):
     L1 = Dense(params['first_neuron'],
                activation=params['activation'],
                kernel_regularizer=l2(params['l2']))(IN)
-    HIDDEN = hidden_layers(L1, params, 1)
+    DROP_L1 = Dropout(params['dropout'])(L1)
+    HIDDEN = hidden_layers(params,6).API(DROP_L1) # Carefull : number of layers = initial layer + hidden layers !!!
+    # Dropout is already cared about in HIDDEN 
     OUT = Dense(6,activation=params['output_activation'],name='OUT')(HIDDEN)
 
     # Define model #
@@ -106,16 +108,16 @@ def HyperScan(x_train,y_train,x_test,y_test,scaler,name):
     """
     # Talos hyperscan parameters #
     p = {
-            'lr' : [0.3],
-            'first_neuron' : [25,50,75,100],
-            'activation' : [relu],
-            'dropout' : [0,0.1,0.2],
-            'hidden_layers' : [2,3,4,5],
-            'output_activation' : [relu],
-            'l2' : [0,0.1,0.2],
+            'lr' : [0.1,0.2,0.3,0.4,0.5],
+            'first_neuron' : [25,50,75,100,150,200,250,300],
+            'activation' : [relu,selu,tanh],
+            'dropout' : [0,0.05,0.1,0.15,0.2],
+            'hidden_layers' : [6],
+            'output_activation' : [relu,selu,tanh],
+            'l2' : [0,0.05,0.1],
             'optimizer' : [Adam],
             'epochs' : [10000],
-            'batch_size' : [1,2,3,4,5],
+            'batch_size' : [1],
             'loss_function' : [mean_squared_error]
         }
     #p = {
@@ -271,7 +273,6 @@ def HyperDeploy(h,name):
     Reference :
         /home/ucl/cp3/fbury/.local/lib/python3.6/site-packages/talos/commands/deploy.py
     """
-
     Deploy(h,model_name=name,metric='eval_f1score_mean',asc=True)
 
 

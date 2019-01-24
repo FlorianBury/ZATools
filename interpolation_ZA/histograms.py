@@ -148,9 +148,10 @@ def CheckHist(dico,verbose=False):
                 weird = True
                 weird_bins.append(i)
         if weird:
-                print("[WARNING] Bin(s) %s not decreasing, might want to check that"%('\t'.join(str(e) for e in weird_bins)))   
-                print ('\tConfig : ',key)
-                print ('\tBins : ',val)
+                if verbose:
+                    print("[WARNING] Bin(s) %s not decreasing, might want to check that"%('\t'.join(str(e) for e in weird_bins)))   
+                    print ('\tConfig : ',key)
+                    print ('\tBins : ',val)
                 weird_cases += 1
         #check = diff>0
         #if  np.any(check):
