@@ -70,6 +70,11 @@ class ConcatenateCSV:
                     if key == 'eval_f1score_mean' and val[i]>1000:
                         valid_error = False
                         print('Eval_error too large (%0.2f), will remove it from full csv file'%(val[i]))
+
+                    # Check if string -> acti or opt -> must correct #
+                    if isinstance(val[i],str): 
+                        corr_val = _correct(val[i]) 
+                        test_line.append(corr_val)
                             
                     # Append the number in the line #
                     else:
@@ -102,6 +107,16 @@ def main():
     instance.Concatenate()
     instance.WriteToFile(output)
 
+def _correct(obj):                                                                                                                                                                                      
+    # Corrects the <function relu at 0x{12}> -> relu 
+    # Corrects the <class 'keras.optimizers.Adam'> -> Adam 
+    if obj.startswith('<function'): 
+        return obj.split(' ')[1] 
+    elif obj.startswith('<class'):
+        new_obj = obj.split(' ')[1].split('.')[2].replace("'>","")
+        return new_obj
+    else:
+        return obj
     
 
 

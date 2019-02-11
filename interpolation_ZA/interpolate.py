@@ -238,7 +238,7 @@ def main():
 
         ################################ 2D bins histograms ####################################
         # Generate the grid #
-        n = 100 # number of bins in both directions
+        n = 500 # number of bins in both directions
         mllbb = np.linspace(0,1000,n)
         mbb = np.linspace(0,1000,n)
         
@@ -246,7 +246,8 @@ def main():
         grid_dict = {}
         for i in range(0,n):
             for j in range(0,n):
-                grid_dict[(mbb[i],mllbb[j])] = 0
+                if mbb[i]<mllbb[j]:
+                    grid_dict[(mbb[i],mllbb[j])] = 0
 
         plot_avg = EvaluateAverage(hist_dict,grid_dict,2)
         plot_tri = EvaluateTriangles(hist_dict,grid_dict)

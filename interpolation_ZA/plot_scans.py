@@ -27,6 +27,15 @@ def PlotScans(data,path):
     g.set(ylim=(0.0001, None))
     plt.savefig(os.path.join(path,'barplot_hidden_last_activation.png'))
    #plt.show()
+    g = sns.relplot(x="first_neuron",
+                y="eval_f1score_mean",
+                col="hidden_layers",
+                hue="output_activation",
+                style="output_activation",
+                data=data);
+    g.set(yscale="log");
+    g.set(ylim=(0.0001, None))
+    plt.savefig(os.path.join(path,'barplot_neuron_hidden_last_activation.png'))
 
     g = sns.relplot(x="l2",
                 y="eval_f1score_mean",

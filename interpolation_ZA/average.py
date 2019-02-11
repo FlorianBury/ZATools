@@ -129,7 +129,7 @@ def EvaluateAverage(train_dict,test_dict,max_n,scan=False):
 
     # Get the hist output #
     if scan:
-        output_dict = InterpolateAverage(hist_dict,eval_list,best_n)
+        output_dict = InterpolateAverage(train_dict,eval_list,best_n)
     else:
         output_dict = InterpolateAverage(train_dict,eval_list,max_n) 
 

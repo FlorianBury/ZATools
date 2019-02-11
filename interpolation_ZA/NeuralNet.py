@@ -108,13 +108,13 @@ def HyperScan(x_train,y_train,x_test,y_test,scaler,name):
     """
     # Talos hyperscan parameters #
     p = {
-            'lr' : [0.1,0.2,0.3,0.4,0.5],
-            'first_neuron' : [25,50,75,100,150,200,250,300],
-            'activation' : [relu,selu,tanh],
-            'dropout' : [0,0.05,0.1,0.15,0.2],
-            'hidden_layers' : [6],
-            'output_activation' : [relu,selu,tanh],
-            'l2' : [0,0.05,0.1],
+            'lr' : [0.5],
+            'first_neuron' : [100,100,100],
+            'activation' : [relu],
+            'dropout' : [0],
+            'hidden_layers' : [4,4],
+            'output_activation' : [selu],
+            'l2' : [0],
             'optimizer' : [Adam],
             'epochs' : [10000],
             'batch_size' : [1],
@@ -145,9 +145,9 @@ def HyperScan(x_train,y_train,x_test,y_test,scaler,name):
                dataset_name=name,
                experiment_no=str(no),
                model=InterpolationModel,
-               reduction_metric='val_loss',
-               reduction_method = 'correlation',
-               reduce_loss = True,
+               #reduction_metric='val_loss',
+               #reduction_method = 'correlation',
+               #reduce_loss = True,
                debug = True,
                last_epoch_value=True,
                print_params=True
