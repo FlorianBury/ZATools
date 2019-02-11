@@ -10,140 +10,10 @@ import random
 import ROOT
 
 from computeEllipseParameters import getMassAndWidth
-from cutWindow import massWindow
 import tdrstyle
 
-
-def getBinsAndNumber(histo):
-    N = 0
-    all_entries = []
-    for x in range(1,histo.GetNbinsX() + 1):            # Loop over bins in x axis
-        for y in range(1,histo.GetNbinsY() + 1):        # Loop over bins in y axis
-            x_low = histo.GetXaxis().GetBinLowEdge(x)
-            x_high = histo.GetXaxis().GetBinUpEdge(x)
-            y_low = histo.GetXaxis().GetBinLowEdge(y)
-            y_high = histo.GetXaxis().GetBinUpEdge(y)
-            z_val = histo.GetBinContent(x,y)
-            # Generate four tuples of corners of the bin + z_val #
-            entry = [[(x_low,y_low),(x_low,y_high),(x_high,y_high),(x_high,y_low)],z_val]
-            all_entries.append(entry)
-            N += histo.GetBinContent(x,y)*((x_high-x_low)*(y_high-y_low))
-    return N,all_entries
-
-def binArea(corners):
-    # corner = [(LxLy),(LxUy),(UxUy),(UxLy)], U= upper, L= lower
-    Ux = corners[2][0]
-    Lx = corners[0][0]
-    Uy = corners[1][1]
-    Ly = corners[0][1]
-    Area = (Ux-Lx)*(Uy-Ly)
-    return Area
-    
-def subDivideBin(corners,z):
-    # corner = [(LxLy),(LxUy),(UxUy),(UxLy)], U= upper, L= lower
-    Ux = corners[2][0]
-    Lx = corners[0][0]
-    Uy = corners[1][1]
-    Ly = corners[0][1]
-
-    a = (Lx,Uy)
-    b = ((Ux-Lx)/2+Lx,Uy)
-    c = (Ux,Uy)
-    d = (Lx,(Uy-Ly)/2+Ly)
-    e = ((Ux-Lx)/2+Lx,(Uy-Ly)/2+Ly)
-    f = (Ux,(Uy-Ly)/2+Ly)
-    g = (Lx,Ly)
-    h = ((Ux-Lx)/2+Lx,Ly)
-    i = (Ux,Ly)
-
-    corner1 = [[d,a,b,e],z]
-    corner2 = [[e,b,c,f],z]
-    corner3 = [[g,d,e,h],z]
-    corner4 = [[h,e,f,i],z]
-    
-    new_corners = [corner1,corner2,corner3,corner4] 
-    return new_corners
-
-    # LxUy a---b---c  UxUy
-    #      |-1-|-2-|  
-    #      d---e---f  
-    #      |-3-|-4-|  
-    # LxLy g---h---i  UxLy
-
-def evaluateSum(array_bin,center,path_json):
-    tot = 0
-    first = True
-    instance = massWindow(path_json)
-    for corners,z in array_bin:
-        for corner in corners:
-            if first:
-                print ('Current bin size : %0.5f\tNumber of bins : %d'%(binArea(corners),len(array_bin)))
-                first = False
-            In = instance.isInWindow(center,1,corner)
-            if In:
-                tot += binArea(corners)*z
-                break
-    return tot
- 
-
-def countInEllipse(array_bin,center,path_json):
-    previous_tot = 0
-    corners = array_bin
-    while True:
-        new_tot = evaluateSum(corners,center,path_json)
-        if new_tot != 0:
-            print ('Previous sum : %0.2E\tCurrent result : %0.2E \tDifference : %0.2f%%'%(previous_tot,new_tot,math.fabs(previous_tot-new_tot)*100/new_tot))
-            if math.fabs(previous_tot-new_tot)/new_tot<0.25:
-                break
-        else:
-            print ('Previous sum : %0.2E\tCurrent result : %0.2E'%(previous_tot,new_tot))
-        print ('Too many variations in the sum, increased number of bins')
-        previous_tot = copy.copy(new_tot)
-        new_corners = []
-        for corner,z in corners:
-            new_corners += subDivideBin(corner,z)
-        corners = copy.deepcopy(new_corners)
-        if len(corners)>1500000:
-            break
-
-    return new_tot
-
-def MC_countInEllipse(center,path_json,histo,n_points=100000):
-    instance = massWindow(path_json)
-    xmax = histo.GetXaxis().GetBinUpEdge(histo.GetNbinsX())
-    ymax = histo.GetYaxis().GetBinUpEdge(histo.GetNbinsY())
-    sum_tot = 0
-    sum_in = 0
-    for i in range(0,n_points):
-        # Process print #
-        #time.sleep(0.1) 
-        sys.stdout.write('Current Process : %0.2f%%\r'%(i*100/n_points))
-        sys.stdout.flush()
-        # Generate a point #
-        x = random.uniform(0,xmax)
-        y = random.uniform(x,ymax) # We only want the upper triangle
-
-        # Check if inside ellipse #
-        in_ellipse = instance.isInWindow(center,1,(x,y))
-
-        # Get bin content #
-        binx = histo.GetXaxis().FindBin(x)
-        biny = histo.GetXaxis().FindBin(y)
-        z = histo.GetBinContent(binx,biny)
-
-        if in_ellipse:
-            sum_in += z
-        sum_tot += z
-
-    integral = histo.Integral(0,histo.GetNbinsX(),0,histo.GetNbinsY()) 
-
-    print (('%s'%(path_json)).ljust(40,'.')+' Finished MC : in = %0.2E / tot = %0.2E \tRatio = %0.5f%%\tIntegral = %0.2E'%(sum_in,sum_tot,sum_in*100/sum_tot,integral))
-    if sum_in*100/sum_tot<10:  
-        print ('[WARNING] Something wrong')
-
-    return sum_in/sum_tot
-
 def get_ratio(MA,MH,path_json):
+    """ Uses the count from a json file to be used in the legend """
     with open (path_json,'r') as f:
         data = json.load(f)
         ratio = -1
@@ -156,7 +26,8 @@ def get_ratio(MA,MH,path_json):
     
     
 
-def getConfig(ellipse,MH,MA): # get ellipse params corresponding to MH and MA
+def getConfig(ellipse,MH,MA): 
+    """ Get ellipse params corresponding to MH and MA """
     for line in ellipse:
         if MH == line[-1] and MA == line[-2]:
             params = line
@@ -164,7 +35,8 @@ def getConfig(ellipse,MH,MA): # get ellipse params corresponding to MH and MA
     # params = [mbb,mllbb,a,b,theta,MA,MH]
     return params
 
-def generateEllipse(ellipse,MH,MA,rho=1): # Generates the ellipse given MH and MA
+def generateEllipse(ellipse,MH,MA,rho=1): 
+    """ Generates the ellipse given MH and MA for the plot """
     params = getConfig(ellipse,MH,MA)
     t = params[4] * 57.29 # radians -> Degrees
     ell = ROOT.TEllipse(params[0],params[1],rho*math.sqrt(params[2]),rho*math.sqrt(params[3]),0,360,t)
@@ -361,10 +233,6 @@ def main():
             mass2D_ElEl = inputs.Get("Mjj_vs_Mlljj_ElEl_hZA_lljj_deepCSV_btagM_mll_and_met_cut")
             mass2D_MuMu = inputs.Get("Mjj_vs_Mlljj_MuMu_hZA_lljj_deepCSV_btagM_mll_and_met_cut")
                
-            #N_ElEl, bins_ElEl = getBinsAndNumber(mass2D_ElEl)
-            #N_MuMu, bins_MuMu = getBinsAndNumber(mass2D_MuMu)
-
-
             # Get numbers in Ellipses #
             if opt.count:
                 ratio_ElEl = get_ratio(MA,MH,'ratioParam_ElEl.json')
